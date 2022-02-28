@@ -1,0 +1,70 @@
+* summary
+keep a directory in order
+
+FILESYTEM
+/home/jam/
+  .ord/
+    config.edn -> home.edn  # or use .bb for more power?
+    work.edn
+    home.edn
+    .git/      # manages, rolls back files in parent dir
+
+  # personal data directories (unmanaged)
+  src/
+  data/
+
+config git
+local git
+
+--git-dir=/path/to/dot-git-directory
+GIT_DIR=/path/to/dot-git-directory.
+
+CONSTRAINTS
+- declarative configuration
+- manage files in place
+- use git for version control and rollback
+- work with direct file edits
+  - diff
+  - import into config
+- should work with
+  - nix packages
+  - brew packages
+  - custom packages
+- local services
+  -? how?
+- integrate with direnv
+- use babashka
+- manage home dir
+- work at project level
+- universal update
+- universal garbage collection
+- universal cache deletion
+  - clean?
+- ? how to separate dot files from data?
+  -? use dedicated directory?
+  -? move out of home?
++ pick name
+  ordinare - latin, italian; put in order
+  ord   short command
+  .ord  short config
+- purpose
+  - manage files in a directory
+  - declaratively configure 3rd party things
+* module api
+- each module needs an update
+* tasks
+** configure command
+ord configure gnome-terminal
+ord configure
+
+** status command
+ord status gnome-terminal
+ord status
+
+** init command
+ord init
+  .ord/
+** dev - github repo
+** doc gen script
+** auto run test script
+** configure shell - ohmyzsh?

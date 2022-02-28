@@ -1,0 +1,36 @@
+#!/usr/bin/env bb
+
+(ns ordinare.cli.wrapper
+  (:require [babashka.deps :as deps]
+            [babashka.fs :as fs]
+            [clojure.edn :as edn]))
+
+(defn find-self
+  [file]
+  (-> file
+      fs/real-path
+      fs/parent
+      fs/parent
+      str))
+
+(defn qualify
+  [home path]
+  (-> home
+      (fs/path path)
+      str))
+
+(defn get-deps
+  [home]
+  (-> home
+      (fs/path "deps.edn")
+      str
+      slurp
+      edn/read-string
+      (update :paths (partial map (partial qualify home)))))
+
+(-> *file*
+    find-self
+    get-deps
+    deps/add-deps)
+(require '[ordinare.cli :as cli])
+(apply cli/-main *command-line-args*)
