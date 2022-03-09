@@ -1,21 +1,61 @@
 (ns ordinare.cli
-  #_(:require [docopt.core :as docopt]))
+  (:require
+   [babashka.fs :as fs]
+   [docopt.core :as docopt]
+   [ordinare.command :as command]
+   [ordinare.log :as log]
+   [ordinare.util :refer [flip]]))
 
-(def usage "Test application.
+;; Ref: http://docopt.org/
+(def usage "ordinare - organize directory
 
-Usage: test-script [options]
+Usage:
+  ord [options] configure [<module> ...]
+  ord status [<module> ...]
 
 Options:
-  --an-arg <something>  An argument")
-(defn -main [& args]
-  (prn "-main: entering")
-  (prn args)
-  #_(docopt/docopt usage args
-                   (fn [arg-map]
-                     (println arg-map)
-                     (println (arg-map "--an-arg")))))
+  -v --verbose
+  ")
 
-(comment
-  42
-  (inc 3)
-  )
+(defn normalize-key
+  [s]
+  (let [s (condp re-matches s
+            #"<(.+)>" :>> second
+            s)]
+    (keyword s)))
+
+(defn find-config-dir
+  []
+  (loop [dir (fs/real-path ".")]
+    (let [path   (fs/path dir ".ord")
+          parent (fs/parent dir)]
+      (cond
+        (fs/directory? path) (str path)
+        parent               (recur parent)))))
+
+(defn normalize
+  [arg-map]
+  (reduce-kv
+   (fn [m k v]
+     (assoc m (normalize-key k) v))
+   {:ordinare/config-dir (find-config-dir)}
+   arg-map))
+
+(defn dispatch
+  [arg-map]
+
+  (when (:--verbose arg-map)
+    (alter-var-root #'log/*level* (constantly :debug)))
+
+  (log/debug "arguments" arg-map)
+
+  ((condp (flip get) arg-map
+     :configure command/configure
+     :status    command/status)
+   arg-map))
+
+(defn -main [& args]
+  (docopt/docopt
+   usage
+   args
+   (comp dispatch normalize)))

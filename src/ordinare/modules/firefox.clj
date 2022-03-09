@@ -1,18 +1,28 @@
-(ns ordinare.modules.gnome-terminal
+(ns ordinare.modules.firefox
   (:require
-   [ordinare.conf.gsettings :as gs]
+   [ordinare.conf.ini :as ini]
    [ordinare.log :as log]
    [ordinare.module :as module]))
 
-(defn get-profile-uuid
-  [profile]
-  (gs/get-setting "org.gnome.Terminal.ProfilesList" profile))
+(comment
+  (ini/read "/home/jam/.mozilla/firefox/profiles.ini")
+  )
 
-(defn get-profile-path
+;; check if profile exists
+;; -? does a profile need to be created if missing?
+;; - install add on in profile
+;; - set dark theme in profile
+;; - set search engines in profile
+
+#_(defn get-profile-uuid
+    [profile]
+    (gs/get-setting "org.gnome.Terminal.ProfilesList" profile))
+
+#_(defn get-profile-path
   [profile-uuid]
   (format "org.gnome.Terminal.Legacy.Profile:/org/gnome/terminal/legacy/profiles:/:%s/" profile-uuid))
 
-(defmethod module/configure :gnome-terminal
+(defmethod module/configure :firefox
   [conf]
   (log/debug "loaded module" conf)
   (doseq [profile (-> conf :profiles keys)

@@ -2,6 +2,7 @@
   (:require [babashka.process :as p]
             [clojure.string :as str]))
 
+;; TODO: add verbose logging
 (defn $
   [& args]
   (-> args

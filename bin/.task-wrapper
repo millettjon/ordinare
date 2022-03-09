@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+# Generic wrapper to run a bb task from this project.
+BB_TASK="$(basename "$0")"
+BB_CONFIG="$(cd "$(dirname $(readlink --canonicalize "$0"))/.." && pwd)/bb.edn"
+exec bb --config "${BB_CONFIG}" run "$BB_TASK" "$@"
