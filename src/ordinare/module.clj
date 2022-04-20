@@ -6,8 +6,10 @@
   (-> module-conf
       :ordinare/module
       name
-      (->> (str "ordinare.modules."))
+      (->> (str "ordinare.module."))
       symbol
       clojure.core/require))
 
-(defmulti configure :ordinare/module)
+(defmulti configure
+  (fn [_conf module]
+    (module :ordinare/module)))

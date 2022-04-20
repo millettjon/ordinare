@@ -1,8 +1,8 @@
 {:paths ["src"]
 
  :deps {bbyaga/bbyaga                       {:local/root "../bbyaga"}
-        clojure-ini/clojure-ini             {:mvn/version "0.0.2"}
-        camel-snake-kebab/camel-snake-kebab {:mvn/version "0.4.2"}}
+        camel-snake-kebab/camel-snake-kebab {:mvn/version "0.4.2"}
+        clojure-ini/clojure-ini             {:mvn/version "0.0.2"}}
 
  :tasks
  {ord {:doc  "organize things"

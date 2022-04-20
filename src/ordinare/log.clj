@@ -9,6 +9,7 @@
    [:debug :info :warning :error]
    (range)))
 
+;; TODO move to bbyaga
 ;; TODO save time
 ;; TODO support exceptions
 ;; TODO support thread local context?

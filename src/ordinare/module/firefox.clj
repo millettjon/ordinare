@@ -1,6 +1,6 @@
-(ns ordinare.modules.firefox
+(ns ordinare.module.firefox
   (:require
-   [ordinare.conf.ini :as ini]
+   [ordinare.effect.ini :as ini]
    [ordinare.log :as log]
    [ordinare.module :as module]))
 
@@ -8,11 +8,17 @@
   (ini/read "/home/jam/.mozilla/firefox/profiles.ini")
   )
 
+;; Ref: https://wiki.mozilla.org/Firefox/CommandLineOptions#User_profile
+
+;; profile should be specified by name
+;; e.g default
+
 ;; check if profile exists
-;; -? does a profile need to be created if missing?
+;; - create profile if missing
 ;; - install add on in profile
 ;; - set dark theme in profile
 ;; - set search engines in profile
+;; - set any configuration settings
 
 #_(defn get-profile-uuid
     [profile]

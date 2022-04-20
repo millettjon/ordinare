@@ -1,4 +1,4 @@
-(ns ordinare.modules.git
+(ns ordinare.module.git
   (:require
    [clojure.string :as str]
    [ordinare.log :as log]

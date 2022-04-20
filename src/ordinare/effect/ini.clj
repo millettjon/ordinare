@@ -1,4 +1,4 @@
-(ns ordinare.conf.ini
+(ns ordinare.effect.ini
   (:require
    [clojure-ini.core :as ini]
    [camel-snake-kebab.core :as csk]

@@ -1,6 +1,6 @@
-(ns ordinare.modules.gnome-terminal
+(ns ordinare.module.gnome-terminal
   (:require
-   [ordinare.conf.gsettings :as gs]
+   [ordinare.effect.gsettings :as gs]
    [ordinare.log :as log]
    [ordinare.module :as module]))
 

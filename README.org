@@ -1,0 +1,251 @@
+* Summary
+Organize a directory.
+
+FILESYTEM
+/home/jam/
+  .ord/
+    config.edn -> home.edn  # or use .bb for more power?
+    work.edn
+    home.edn
+    .git/      # manages, rolls back files in parent dir
+
+  # personal data directories (unmanaged)
+  src/
+  data/
+
+config git
+local git
+
+--git-dir=/path/to/dot-git-directory
+GIT_DIR=/path/to/dot-git-directory.
+
+ord git init
+ord git
+ord status
+   - ? shows all untracked files?
+
+
+
+
+CONSTRAINTS
+- declarative configuration
+- manage files in place
+- use git for version control and rollback
+- work with direct file edits
+  - diff
+  - import into config
+- should work with
+  - nix packages
+  - brew packages
+  - custom packages
+- local services
+  -? how?
+- integrate with direnv
+- use babashka
+- manage home dir
+- work at project level
+- universal update
+- universal garbage collection
+- universal cache deletion
+  - clean?
+- ? how to separate dot files from data?
+  -? use dedicated directory?
+  -? move out of home?
++ pick name
+  ordinare - latin, italian; put in order
+  ord   short command
+  .ord  short config
+- purpose
+  - manage files in a directory
+  - declaratively configure 3rd party things
+* module api
+- each module needs an update
+* TASKS
+** configure command
+# all modules
+ord configure
+
+# single module
+ord configure gnome-terminal
+
+** status command
+ord status gnome-terminal
+ord status
+- check specs for conf file
+- check each module
+- --verbose
+
+** init command
+ord init
+  .ord/
+
+** dev - github repo
+** doc gen script
+** auto run test script
+** load keys into keychain
+- ? which pin entry?
+- ? which agent?
+- ? how to handle .bash.d?
+  - ? how to configure which files to source?
+  - ? how to support a) env vars, b) aliases, c) functions, d) shell options, e) auto complete?
+- ? how to run at a) login and b) new shell?
+- ? how to handle different shell types?
+- ? this is outside the scope of ord and more like direnv?
+** configure shell - ohmyzsh?
+** configure keyboard shortcuts
+- https://github.com/kmonad/kmonad
+** chorded keyboard
+- using kmonad: https://github.com/kmonad/kmonad/issues/179
+  - https://www.reddit.com/r/olkb/comments/inb3ls/announcing_qmkonlaptop_alternative_kmonad_big/
+- QMK - firmware for keyboards
+
+** screen brightness - cycle with hotkey
+https://wiki.archlinux.org/title/backlight#Switch_off_the_backlight
+-? how to switch off completely?
+-? how to auto set based on ambient light level?
+-? how to control keyboard backlight?
+   https://wiki.archlinux.org/title/keyboard_backlight
+   - light might be able to do it
+   - ? how does bios setting affect it?
+   = Fn-F8 toggles keyboard backlight
+     -? can this be simulated via software?
+
+-? what should script do?
+   cycle: min, 1/3, 2/3, max
+   cycle: min, 1/2, max
+-? use keymap layer?
+   - b cycle brightness
+   - r toggle redshift
+   - a auto set based on time of day
+   - k toggle keyboard backlight
+     - auto disable keyboard backlight except when brightness under a threshold
+   - movie mode
+     - disable redshift
+     - max brightness
+     - disable screen saver
+-? how to turn off?
+   - note: lock screen does it
+-? where should script live?
+
+brightness
+luminare
+
+- babashka tests w/ file watching
+https://github.com/babashka/babashka/discussions/1102
+
+** sound control
+- cycle through levels  0, 1/4, 1/2, 3/4, 100
+- cycle through outputs
+- cycle through source (global, app1, ...)
+  - sync app w/ global?
+- ? super boost? 150%?
+- open pavucontrol
+
+** keyboard backlight - toggle with hotkey
+https://gist.github.com/ps1dr3x/b15c62eafb388ddf8bb7d3896d1a1cee
+- disable during the day (bios setting?)
+** screen brightness - control vi ambient light level
+- could use timezone but needs manual override
+-? is there a brightness setting for keyboard?
+- could cycle through presents for both keyboard and screen
+  cycle: auto, min, med, med, max
+
+reading sensors - accelerometer, light, compass
+https://gitlab.freedesktop.org/hadess/iio-sensor-proxy/
+
+** screen brightness - redshift
+** movie mode
+- fzf search catalog
+- full screen
+- set volume
+- disable screen saver
+- set screen brightness
+- set keyboard brightness
+** configure firefox
+- command line arguments: http://kb.mozillazine.org/Command_line_arguments
+- home-manager: https://discourse.nixos.org/t/firefox-extensions/1122/19
+- bookmarks: https://stackoverflow.com/questions/51124179/how-can-i-add-or-remove-a-bookmark-tag-in-firefox-via-the-command-line
+
+- list profiles
+  ~/.mozilla/firefox/
+    lock
+    profiles.ini
+    s9nbfu62.default/
+      addons.json
+      cookies.sqlite
+      places.sqlite
+      extensions-preferences.json
+
+- get installed version of add on
+- get available version of add on
+- download add on
+- install add on
+- upgrade add on
+- remove add on (or just delete profile?)
+- update search engine list
+- update bookmarks list
+- update settings
+  - disable notifications
+  - disable saving passwords
+- delete profile
+- auto clear history
+- auto clear cookies
+- set as default browser
+  https://wiki.mozilla.org/Firefox/CommandLineOptions#-setDefaultBrowser
+  -? what does this do?
+
+** geoip/vpn/network status in bar
+- ? can bar be transparent?
+** exwm
+** polybar
+https://github.com/polybar/polybar
+
+** vpn switcher usa/chile/disable
+** fingerprint scanner
+lsusb
+Bus 003 Device 002: ID 1c7a:0575 LighTuning Technology Inc. EgisTec EH575
+- should be supported in libfprint
+
+https://fprint.freedesktop.org/
+
+* directory management
+- standalone git project
+- git annex?
+- unmanaged
+- fully managed
+* methodical
+https://github.com/camsaul/methodical
+- doesn't work with babashka
+* ncdu
+- ncurses disk usage
+- ? why are colors not working?
+* containerized browsing
+https://msucharski.eu/posts/application-isolation-nixos-containers/
+** containers
+- torrent
+- news
+- email
+- finance - us
+- finance - chile
+- private - tor
+* security
+** password management
+** backup and recovery
+** 2 factor auth
+** gpg
+** ssh
+** deterministic
+- gpg key
+  https://github.com/summitto/pgp-key-generation/
+  dev list thread: https://dev.gnupg.org/T169
+- data cache
+- for borg, use repo key?
+
+* colored edn
+** puget
+- puget uses fipp
+- bb bundles modified fipp as clojure.pprint
+- stock fipp is required by pugent but doesn't work in bb :(
+** puget-cli https://github.com/borkdude/puget-cli
+** bat
+- might work ok and is likely easier to install

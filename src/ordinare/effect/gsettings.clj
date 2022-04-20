@@ -1,4 +1,4 @@
-(ns ordinare.conf.gsettings
+(ns ordinare.effect.gsettings
   (:require
    [ordinare.process :refer [$]]))
 
