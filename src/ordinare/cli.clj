@@ -1,65 +1,49 @@
 (ns ordinare.cli
   (:require
-   [babashka.fs :as fs]
-   [clojure.edn :as edn]
-   [docopt.core :as docopt]
+   [babashka.fs      :as fs]
+   [docopt.core      :as docopt]
    [ordinare.command :as command]
-   [ordinare.log :as log]
-   [ordinare.util :refer [flip]]))
+   [ordinare.config  :refer [*config*]]
+   [ordinare.log     :as log]
+   [ordinare.tree    :as tree]))
 
 ;; Ref: http://docopt.org/
 (def usage "ordinare - organize directory
 
 Usage:
-  ord [options] configure [<dir-or-module> ...]
-  ord status [<dir-or-module> ...]
+  ord [options] configure [<path-or-module> ...]
+  ord [options] status    [<path-or-module> ...]
 
 Options:
   -v --verbose
   -n --dry-run
   ")
 
-(defn find-config-dir
-  []
-  (loop [dir (fs/real-path ".")]
-    (let [path   (fs/path dir ".ord")
-          parent (fs/parent dir)]
-      (cond
-        (fs/directory? path) (str path)
-        parent               (recur parent)))))
-
-(defn get-config
-  []
-  (let [dir (find-config-dir)]
-    (merge
-     {:config-dir dir
-      :work-dir (-> dir fs/parent str)}
-     (-> (fs/path dir "config.edn")
-         str
-         slurp
-         edn/read-string))))
+(defn path-matches?
+  [module path]
+  (let [cp        (-> module :context :path)
+        mp        (-> module :opts :path)
+        node-path (cond
+                    (and cp mp) (fs/path cp mp)
+                    cp          (fs/path cp)
+                    :else       (fs/path mp))
+        node-path (fs/normalize node-path)]
+    (fs/starts-with? node-path path)))
 
 (defn resolve-module-list
-  "resolve dir-or-module into list of modules"
-  [conf arg-map]
-  (let [targets (-> arg-map :dir-or-module set)]
+  "resolve path-or-module into list of modules"
+  [arg-map]
+  (let [targets (-> arg-map :path-or-module set)]
     (-> arg-map
-        (assoc :modules (->> conf
-                             :modules
+        (assoc :modules (->> *config*
+                             :root
+                             (tree/module-seq {})
                              (filter (fn [module]
-                                       (or (targets (:dir module))
-                                           (targets (-> module :ordinare/module str)))))
+                                       (or (empty? targets) ; match everything if no targets
+                                           (some (partial path-matches? module) targets)
+                                           (targets (-> module :type name)))))
                              seq))
-        (dissoc :dir-or-module))))
-
-;; TODO throw if no config dir found
-;; TODO throw if no work dir found
-;; TODO check paths relative to working directory
-;;    - if relative path
-;;      combine with current directory
-;;      find path under work-dir
-;;      check module list for that
-;; TODO throw an exception of module fails to resolve
+        (dissoc :path-or-module))))
 
 (defn normalize-key
   [s]
@@ -84,23 +68,21 @@ Options:
   (dissoc arg-map :verbose))
 
 (defn dispatch
-  [conf arg-map]
-  (log/debug "conf" conf)
+  [arg-map]
   (log/debug "arguments" arg-map)
-  ((condp (flip get) arg-map
-     :configure command/configure
-     :status    command/status)
-   conf
+  ((condp arg-map false
+     :status    command/status
+     :configure command/configure)
    arg-map))
 
 (defn process-args
   [arg-map]
-  (let [conf    (get-config)
-        arg-map (-> arg-map
+  (let [arg-map (-> arg-map
                     normalize-keys
                     handle-verbose
-                    (->> (resolve-module-list conf)))]
-    (dispatch conf arg-map)))
+                    (->> (resolve-module-list)))]
+    (dispatch arg-map)))
+
 (defn -main [& args]
   (docopt/docopt
    usage

@@ -1,17 +1,37 @@
 (ns ordinare.effect
-  )
+  (:require
+    [ordinare.module :refer [dispatch]]))
 
-;; applied?
-;; apply!
-;; ensure   ; applies if not already applied
-;; diff     ; filters a list of effects by applied?
+(defn notify-user
+  [module message effect]
+  (println (str "(" (-> module :type name) ")") message (pr-str effect)))
 
-;; -? add dry run flag?
-;; -? how would dry run be supported?
-;;    - effects/apply! is a no-op that just prints what it would do?
+(defmulti delete!-impl dispatch)
 
-;; - ? how to do things :around multi-methods?
-;;   -? can before be done in the dispatch?
-;;   -? can just make a wrapper fn
-;; effect/apply
-;; effect/apply-impl
+(defn delete!
+  [module effect]
+  (delete!-impl module effect)
+  (notify-user module "Deleted setting:" effect))
+
+(defmulti add!-impl dispatch)
+
+(defn add!
+  [module effect]
+  (add!-impl module effect)
+  (notify-user module "Added setting:" effect))
+
+(defmulti update!-impl dispatch)
+
+(defn update!
+  [module effect]
+  (update!-impl module effect)
+  (notify-user module "Updated setting:" effect))
+
+(defn apply!
+  [module effect]
+  (let [ops (-> effect val keys set)
+        f (case ops
+            #{:-}    delete!
+            #{:+}    add!
+            #{:+ :-} update!)]
+    (f module effect)))

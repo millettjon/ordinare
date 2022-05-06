@@ -9,6 +9,9 @@
    [:debug :info :warning :error]
    (range)))
 
+;; Use timbre?
+;; https://github.com/ptaoussanis/timbre
+;;
 ;; TODO move to bbyaga
 ;; TODO save time
 ;; TODO support exceptions

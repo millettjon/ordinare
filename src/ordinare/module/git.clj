@@ -1,37 +1,49 @@
 (ns ordinare.module.git
   (:require
-   [clojure.string :as str]
-   [ordinare.log :as log]
-   [ordinare.module :as module]
-   [ordinare.process :refer [$]]))
+   [clojure.spec.alpha  :as s]
+   [medley.core         :refer [filter-vals]]
+   [ordinare.effect     :as effect]
+   [ordinare.effect.git :as git]
+   [ordinare.module     :as module]
+   [ordinare.spec       :as o.s :refer [only-keys]]
+   [ordinare.util       :as u]))
 
-(defn ->key-path
-  [ks]
-  (->> ks
-       (map name)
-       (str/join ".")))
-#_ (->key-path [:foo :bar])
+(def MODULE :git)
 
-(defn get-global-setting
-  [ks]
-  (try
-    (->> (->key-path ks)
-         ($ "git" "config" "--global" )
-         first)
-    (catch Exception _)))
-#_ (get-global-setting [:user :email])
+;; ----------
+;; SPECS
+(s/def ::type   #(= MODULE %))
+(s/def ::name   string?)
+(s/def ::email  string?)
+(s/def ::user   (only-keys :req-un [::name ::email]))
+(s/def ::opts   (only-keys :req-un [::user]))
+(s/def ::config (only-keys :req-un [::type ::o.s/context ::opts]))
 
-(defn set-global-setting
-  [ks v]
-  ($ "git" "config" "--global" (->key-path ks) v))
-#_ (set-global-setting [:user :email] "jon@millett.net")
+#_ {:type :git,
+    :opts {:user {:email "jon@millett.net", :name "Jonathan Millett"}}}
 
-(defmethod module/configure :git
-  [conf]
-  (log/debug "loaded module" conf)
-  (doseq [[k v] (conf :user)
-          :let  [ks    [:user k]
-                 old-v (get-global-setting ks)]]
-    (when-not (= v old-v)
-      (log/info "configured setting" {k v})
-      (set-global-setting ks v))))
+(defmethod module/query MODULE
+  [module]
+  {:user (reduce-kv (fn [m k _v]
+                      (if-let [v (git/get-global-setting [:user k])]
+                        (assoc m k v)
+                        m))
+                    {}
+                    (-> module :opts :user))})
+
+(defmethod module/diff MODULE
+  [module current-state]
+  (filter-vals map?
+               (u/diff-map
+                (u/flatten-map current-state)
+                (-> module
+                    :opts
+                    u/flatten-map))))
+
+(defmethod effect/update!-impl MODULE
+  [_module [ks {new-v :+}]]
+  (git/set-global-setting ks new-v))
+
+(defmethod effect/add!-impl MODULE
+  [_module [ks {new-v :+}]]
+  (git/set-global-setting ks new-v))

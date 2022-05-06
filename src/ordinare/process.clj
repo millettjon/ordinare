@@ -5,8 +5,12 @@
 ;; TODO: add verbose logging
 (defn $
   [& args]
-  (-> args
-      p/sh
-      p/check
-      :out
-      str/split-lines))
+  (let [x          (first args)
+        [cmd opts] (if (map? x)
+                     [(rest args) x]
+                     [args nil])]
+    (-> cmd
+        (p/sh opts)
+        p/check
+        :out
+        str/split-lines)))

@@ -60,7 +60,36 @@ CONSTRAINTS
   - declaratively configure 3rd party things
 * module api
 - each module needs an update
+* bb tooling
+** cider test runner doesn't work with bb
+- run test
+- run tests in ns
+** enhance cider inspector to show tap> output
+Ref: https://github.com/clojure-emacs/cider/issues/3055
+Ref: https://github.com/clojure-emacs/cider/issues/3090
+** hookup bb to reveal
+
+** rcf
+rcf https://github.com/hyperfiddle/rcf
+
 * TASKS
+** dry-run - git
+- calculate effects
+- show diff
+- apply effects
+- log
+** dry-run - git-project
+- calculate effects
+- show diff
+- apply effects
+- log
+** test - get basic tests working
+** test - watch files and autorun tests
+** tap - find a way to hookup (emacs? reveal?)
+cider:
+- https://github.com/clojure-emacs/cider/issues/3055
+- https://github.com/clojure-emacs/cider/issues/3094
+
 ** configure command
 # all modules
 ord configure
@@ -81,6 +110,12 @@ ord init
 
 ** dev - github repo
 ** doc gen script
+** firefox
+- activate reader view
+- built in reader view
+- kill-sticky
+  bookmarklet that kills static items that don't scroll
+  https://github.com/t-mart/kill-sticky
 ** auto run test script
 ** load keys into keychain
 - ? which pin entry?
@@ -241,6 +276,22 @@ https://msucharski.eu/posts/application-isolation-nixos-containers/
 - data cache
 - for borg, use repo key?
 
+* specs
+- babashka/spec.alpha: https://github.com/babashka/spec.alpha
+  - coax: https://github.com/exoscale/coax (coercions)
+  - orchestra: https://github.com/jeaye/orchestra (fn specs)
+- spartanspec: https://github.com/borkdude/spartan.spec (deprecated)
+- minimalist: https://github.com/green-coder/minimallist (not active)
+- malli pod: https://github.com/babashka/pod-babashka-malli (experimental)
+* cli parsing
+malli-cli: https://github.com/piotr-yuxuan/malli-cli
+* diff
+- clojure.data
+- deep-diff2
+  - doesn't work in babashka
+- editscript
+  - https://github.com/juji-io/editscript
+  - doesn't work in babashka
 * colored edn
 ** puget
 - puget uses fipp

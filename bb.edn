@@ -2,7 +2,19 @@
 
  :deps {bbyaga/bbyaga                       {:local/root "../bbyaga"}
         camel-snake-kebab/camel-snake-kebab {:mvn/version "0.4.2"}
-        clojure-ini/clojure-ini             {:mvn/version "0.0.2"}}
+        clojure-ini/clojure-ini             {:mvn/version "0.0.2"}
+        medley/medley                       {:mvn/version "1.4.0"}
+
+        ;; specs
+        org.babashka/spec.alpha     {:git/url "https://github.com/babashka/spec.alpha"
+                                     :git/sha "433b0778e2c32f4bb5d0b48e5a33520bee28b906"}
+        com.github.igrishaev/soothe {:mvn/version "0.1.1"}
+
+        ;; not yet working on bb
+        #_#_com.hyperfiddle/rcf   {:mvn/version "20220405"}
+        ;; lambda-island deep-diff2
+        #_#_methodical/methodical {:mvn/version "0.12.2"}
+        #_#_lambdaisland/kaocha   {:mvn/version "1.65.1029"}}
 
  :tasks
  {ord {:doc  "organize things"
