@@ -21,6 +21,9 @@
       (throw (ex-info (str "invalid " spec) (assoc (sth/explain-data spec x) :x x))))
     result))
 
-(s/def ::level int?)
-(s/def ::path string?)
-(s/def ::context (only-keys :req-un [::path ::level]))
+;; Shared specs used to build module specs.
+(s/def ::path     string?)
+(s/def ::level    #(and (int? %) (>= % 0)))
+(s/def ::context  (only-keys :req-un [::level]
+                             :opt-un [::path]))
+(s/def ::children vector?)

@@ -1,48 +1,36 @@
 (ns ordinare.cli
   (:require
-   [babashka.fs      :as fs]
    [docopt.core      :as docopt]
    [ordinare.command :as command]
    [ordinare.config  :refer [*config*]]
    [ordinare.log     :as log]
+   [ordinare.module  :as module]
    [ordinare.tree    :as tree]))
 
 ;; Ref: http://docopt.org/
 (def usage "ordinare - organize directory
 
 Usage:
-  ord [options] configure [<path-or-module> ...]
-  ord [options] status    [<path-or-module> ...]
+  ord [options] (ls|list)   [<path-or-module> ...]
+  ord [options] (x|execute) [<path-or-module> ...]
 
 Options:
   -v --verbose
-  -n --dry-run
   ")
 
-(defn path-matches?
-  [module path]
-  (let [cp        (-> module :context :path)
-        mp        (-> module :opts :path)
-        node-path (cond
-                    (and cp mp) (fs/path cp mp)
-                    cp          (fs/path cp)
-                    :else       (fs/path mp))
-        node-path (fs/normalize node-path)]
-    (fs/starts-with? node-path path)))
-
-(defn resolve-module-list
-  "resolve path-or-module into list of modules"
+(defn init-modules
+  "Initializes the tree of modules from the config and command line arguments."
   [arg-map]
   (let [targets (-> arg-map :path-or-module set)]
     (-> arg-map
-        (assoc :modules (->> *config*
-                             :root
-                             (tree/module-seq {})
-                             (filter (fn [module]
-                                       (or (empty? targets) ; match everything if no targets
-                                           (some (partial path-matches? module) targets)
-                                           (targets (-> module :type name)))))
-                             seq))
+        (assoc :tree (-> *config*
+                         :root
+                         tree/init-from-config
+                         (tree/select
+                          (fn [module]
+                            (or (empty? targets) ; match everything if no targets
+                                (some (partial module/path-matches? module) targets)
+                                (targets (-> module :type name)))))))
         (dissoc :path-or-module))))
 
 (defn normalize-key
@@ -67,21 +55,25 @@ Options:
     (alter-var-root #'log/*level* (constantly :debug)))
   (dissoc arg-map :verbose))
 
-(defn dispatch
+(defn dispatch-command
   [arg-map]
   (log/debug "arguments" arg-map)
-  ((condp arg-map false
-     :status    command/status
-     :configure command/configure)
+  ((condp #(some %2 %1) arg-map
+     #{:ls :list}    command/status
+     #{:x  :execute} command/execute)
    arg-map))
 
 (defn process-args
   [arg-map]
-  (let [arg-map (-> arg-map
-                    normalize-keys
-                    handle-verbose
-                    (->> (resolve-module-list)))]
-    (dispatch arg-map)))
+    #_(println "*CONFIG*")
+    #_(clojure.pprint/pprint *config*)
+    #_(println "CONFIG.EDN")
+    #_(clojure.pprint/pprint arg-map)
+  (-> arg-map
+      normalize-keys
+      handle-verbose
+      init-modules
+      dispatch-command))
 
 (defn -main [& args]
   (docopt/docopt

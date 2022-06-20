@@ -1,37 +1,51 @@
-(ns ordinare.effect
-  (:require
-    [ordinare.module :refer [dispatch]]))
+(ns ordinare.effect)
 
-(defn notify-user
-  [module message effect]
-  (println (str "(" (-> module :type name) ")") message (pr-str effect)))
+(defn- dispatch
+  [{module-type :type :as _module}
+   [effect-type :as _effect]]
+  (if (namespace effect-type)
+    effect-type
+    (-> module-type
+        name
+        (->> (str "ordinare.module."))
+        (keyword effect-type))))
 
-(defmulti delete!-impl dispatch)
+(defmulti ->str dispatch)
 
-(defn delete!
+(defmethod ->str :default
   [module effect]
-  (delete!-impl module effect)
-  (notify-user module "Deleted setting:" effect))
+  (let [effect' (update effect 0 (comp keyword name))]
+    (str "(" (-> module :type name) ") " (pr-str effect'))))
 
-(defmulti add!-impl dispatch)
+(defmulti apply*! dispatch)
 
-(defn add!
-  [module effect]
-  (add!-impl module effect)
-  (notify-user module "Added setting:" effect))
+;; TODO works in cider repl but gnome-terminal shows as "?"
+(def white-check "\u2705")
+;; bb -e '(System/setProperty "file.encoding" "UTF-8") (println "\u2705")'
+;; echo -e "\xe2\x96\x88"
 
-(defmulti update!-impl dispatch)
+;; None of these work
+#_(System/setProperty "file.encoding" "UTF-8")
+#_(System/setProperty "file.encoding" "UTF8")
+#_(let [writer (clojure.java.io/writer *out* :encoding "UTF-8")]
+  (.write writer "checkmark: \u2705 \n\n")
+  (.flush writer))
 
-(defn update!
-  [module effect]
-  (update!-impl module effect)
-  (notify-user module "Updated setting:" effect))
+;; This seems wrong.
+#_(System/getProperty "file.encoding")    ; "ANSI_X3.4-1968"
+#_(System/setProperty "file.encoding" "UTF-8")
+
+;; However, this works somehow in cider-repl.
+#_(print white-check)
 
 (defn apply!
   [module effect]
-  (let [ops (-> effect val keys set)
-        f (case ops
-            #{:-}    delete!
-            #{:+}    add!
-            #{:+ :-} update!)]
-    (f module effect)))
+  (try
+    ;; TODO add logging
+    {:ok true
+     :value (apply*! module effect)
+     :message "+" #_white-check}
+    (catch Exception ex
+      {:ok false
+       :message (str ex)
+       :value ex})))

@@ -20,9 +20,12 @@
  {ord {:doc  "organize things"
        :task ordinare.cli/-main}
 
-  outdated bbyaga.tasks/antq
-  nrepl    bbyaga.tasks/nrepl
-  wrap     bbyaga.tasks/wrap}
+  outdated bbyaga.task/outdated
+  nrepl    bbyaga.task/nrepl
+  test     bbyaga.task/test
+  wrap     bbyaga.task/wrap}
 
  :aliases {:test
            {:extra-paths ["test"]}}}
+
+;; bb -cp `clj -Spath -Sdeps '{:deps {djblue/portal {:mvn/version "0.25.0"}}}'`

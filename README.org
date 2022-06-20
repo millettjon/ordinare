@@ -73,36 +73,30 @@ Ref: https://github.com/clojure-emacs/cider/issues/3090
 rcf https://github.com/hyperfiddle/rcf
 
 * TASKS
-** dry-run - git
+** figure out naming convention: node vs module
+? node in tree.clj?
+? module everywhere else?
+? module everywhere?
+
+** git - get working
 - calculate effects
 - show diff
 - apply effects
 - log
-** dry-run - git-project
+** git-project - get working
+-? should it be named git-clone?
 - calculate effects
 - show diff
 - apply effects
 - log
+** gnome-terminal
+** firefox
 ** test - get basic tests working
 ** test - watch files and autorun tests
 ** tap - find a way to hookup (emacs? reveal?)
 cider:
 - https://github.com/clojure-emacs/cider/issues/3055
 - https://github.com/clojure-emacs/cider/issues/3094
-
-** configure command
-# all modules
-ord configure
-
-# single module
-ord configure gnome-terminal
-
-** status command
-ord status gnome-terminal
-ord status
-- check specs for conf file
-- check each module
-- --verbose
 
 ** init command
 ord init
@@ -111,6 +105,8 @@ ord init
 ** dev - github repo
 ** doc gen script
 ** firefox
+- ad block
+- darkmode
 - activate reader view
 - built in reader view
 - kill-sticky
