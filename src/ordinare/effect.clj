@@ -1,23 +1,8 @@
 (ns ordinare.effect)
 
-(defn- dispatch
-  [{module-type :type :as _module}
-   [effect-type :as _effect]]
-  (if (namespace effect-type)
-    effect-type
-    (-> module-type
-        name
-        (->> (str "ordinare.module."))
-        (keyword effect-type))))
-
-(defmulti ->str dispatch)
-
-(defmethod ->str :default
-  [module effect]
-  (let [effect' (update effect 0 (comp keyword name))]
-    (str "(" (-> module :type name) ") " (pr-str effect'))))
-
-(defmulti apply*! dispatch)
+(defn warn
+  [message]
+  {:message (format "WARNING: %s" message)})
 
 ;; TODO works in cider repl but gnome-terminal shows as "?"
 (def white-check "\u2705")
@@ -37,15 +22,3 @@
 
 ;; However, this works somehow in cider-repl.
 #_(print white-check)
-
-(defn apply!
-  [module effect]
-  (try
-    ;; TODO add logging
-    {:ok true
-     :value (apply*! module effect)
-     :message "+" #_white-check}
-    (catch Exception ex
-      {:ok false
-       :message (str ex)
-       :value ex})))

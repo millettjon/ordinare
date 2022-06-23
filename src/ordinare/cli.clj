@@ -11,8 +11,8 @@
 (def usage "ordinare - organize directory
 
 Usage:
-  ord [options] (ls|list)   [<path-or-module> ...]
-  ord [options] (x|execute) [<path-or-module> ...]
+  ord [options] status [<path-or-module> ...]
+  ord [options] apply  [<path-or-module> ...]
 
 Options:
   -v --verbose
@@ -30,7 +30,7 @@ Options:
                           (fn [module]
                             (or (empty? targets) ; match everything if no targets
                                 (some (partial module/path-matches? module) targets)
-                                (targets (-> module :type name)))))))
+                                (targets (-> module :ord/type str #_name)))))))
         (dissoc :path-or-module))))
 
 (defn normalize-key
@@ -59,8 +59,8 @@ Options:
   [arg-map]
   (log/debug "arguments" arg-map)
   ((condp #(some %2 %1) arg-map
-     #{:ls :list}    command/status
-     #{:x  :execute} command/execute)
+     #{:status} command/status
+     #{:apply}  command/apply)
    arg-map))
 
 (defn process-args

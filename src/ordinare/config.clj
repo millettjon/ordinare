@@ -12,26 +12,25 @@
         (fs/directory? path) (str path)
         parent               (recur parent)))))
 
+;; TODO: add .ord/src to the classpath if present?
+;;   -? can bb dynamically add a dir to the classpath?
+;;     yes: https://book.babashka.org/#babashka_classpath
 (defn read-config
   []
   (let [dir (find-config-dir)]
     (merge
      {:config-dir dir
       :work-dir   (-> dir fs/parent str)}
-     (-> (fs/path dir "config.edn")
+     ;; TODO ? how to validate?
+     ;; ? at least double check it is a map?
+     (-> (fs/path dir "config.clj")
          str
-         slurp
-         edn/read-string))))
+         load-file))))
 
+;; TODO run this during startup process instead of on file load
+;; - should print out details when verbose is enabled
 (def ^:dynamic *config*
   (read-config))
 
 #_(with-bindings {#'*config* {:foo "FOO"}}
     *config*  )
-
-(comment
-  ;; -? does edn support meta data? yes
-  (let [x (edn/read-string
-           "^:ordinare.module/arg []")]
-    (meta x))
-  )

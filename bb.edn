@@ -1,13 +1,13 @@
 {:paths ["src"]
 
  :deps {bbyaga/bbyaga                       {:local/root "../bbyaga"}
-        camel-snake-kebab/camel-snake-kebab {:mvn/version "0.4.2"}
+        camel-snake-kebab/camel-snake-kebab {:mvn/version "0.4.3"}
         clojure-ini/clojure-ini             {:mvn/version "0.0.2"}
         medley/medley                       {:mvn/version "1.4.0"}
 
         ;; specs
         org.babashka/spec.alpha     {:git/url "https://github.com/babashka/spec.alpha"
-                                     :git/sha "433b0778e2c32f4bb5d0b48e5a33520bee28b906"}
+                                     :git/sha "8df0712896f596680da7a32ae44bb000b7e45e68"}
         com.github.igrishaev/soothe {:mvn/version "0.1.1"}
 
         ;; not yet working on bb
@@ -27,5 +27,3 @@
 
  :aliases {:test
            {:extra-paths ["test"]}}}
-
-;; bb -cp `clj -Spath -Sdeps '{:deps {djblue/portal {:mvn/version "0.25.0"}}}'`

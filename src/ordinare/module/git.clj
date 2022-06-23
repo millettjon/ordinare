@@ -1,49 +1,97 @@
 (ns ordinare.module.git
   (:require
-   [clojure.spec.alpha  :as s]
-   [medley.core         :refer [filter-vals]]
-   [ordinare.effect     :as effect]
-   [ordinare.effect.git :as git]
-   [ordinare.module     :as module]
-   [ordinare.spec       :as o.s :refer [only-keys]]
-   [ordinare.util       :as u]))
-
-(def MODULE :git)
+   [clojure.spec.alpha :as s]
+   [clojure.string     :as str]
+   [ordinare.fs        :as fs]
+   [ordinare.effect    :as effect]
+   [ordinare.process   :refer [$]]))
 
 ;; ----------
-;; SPECS
-(s/def ::type   #(= MODULE %))
-(s/def ::name   string?)
-(s/def ::email  string?)
-(s/def ::user   (only-keys :req-un [::name ::email]))
-(s/def ::opts   (only-keys :req-un [::user]))
-(s/def ::config (only-keys :req-un [::type ::o.s/context ::opts]))
+;; EFFECT HELPERS
 
-#_ {:type :git,
-    :opts {:user {:email "jon@millett.net", :name "Jonathan Millett"}}}
+(defn ->key-path
+  [ks]
+  (->> ks
+       (map name)
+       (str/join ".")))
+#_ (->key-path [:foo :bar])
 
-(defmethod module/query MODULE
-  [module]
-  {:user (reduce-kv (fn [m k _v]
-                      (if-let [v (git/get-global-setting [:user k])]
-                        (assoc m k v)
-                        m))
-                    {}
-                    (-> module :opts :user))})
+(defn get-global-setting
+  [ks]
+  (try
+    (->> (->key-path ks)
+         ($ "git" "config" "--global" )
+         first)
+    (catch Exception _)))
+#_ (get-global-setting [:user :email])
 
-(defmethod module/diff MODULE
-  [module current-state]
-  (filter-vals map?
-               (u/diff-map
-                (u/flatten-map current-state)
-                (-> module
-                    :opts
-                    u/flatten-map))))
+(defn set-global-setting
+  [ks v]
+  ($ "git" "config" "--global" (->key-path ks) v))
+#_ (set-global-setting [:user :email] "jon@millett.net")
 
-(defmethod effect/update!-impl MODULE
-  [_module [ks {new-v :+}]]
-  (git/set-global-setting ks new-v))
+;; ----------
+;; CONFIG MODULE
 
-(defmethod effect/add!-impl MODULE
-  [_module [ks {new-v :+}]]
-  (git/set-global-setting ks new-v))
+(s/def ::name       string?)
+(s/def ::email      string?)
+(s/def ::user       (s/keys :opt-un [::name ::email]))
+
+(def config
+  {:type :git/config
+   :spec (s/keys :opt-un [::user])
+   :name "git config"
+   :fn   (fn [{:keys [user]}]
+           (mapv (fn [[k expected]]
+                   (let [actual (get-global-setting [:user k])]
+                     (when (not= actual expected)
+                       {:fn      #(set-global-setting [:user k] expected)
+                        :message (format "set user.%s: %s -> %s" (name k) actual expected)})))
+                 user))})
+
+;; ----------
+;; CLONE MODULE
+
+(defn top-level
+  "Returns the top level git directory."
+  []
+  (try
+    (-> ($ "git" "rev-parse" "--show-toplevel")
+        first)
+    (catch Exception _)))
+
+(defn repo?
+  "Returns true if dir is a git repo."
+  []
+  (= (top-level) fs/*cwd*))
+
+(defn origin-url
+  []
+  (-> ($ "git" "config" "--get" "remote.origin.url")
+      first))
+
+(s/def ::url string?)
+
+(def clone
+  {:type :git/clone
+   :spec (s/keys :opt-un [::url])
+   :name "git clone"
+   :fn   (fn
+           [{:keys [url]}]
+           (cond
+             ;; Directory is empty.
+             (fs/empty? ".")
+             [{:fn      #($ "git" "clone" url ".")
+               :message url}]
+
+             ;; A repo already exists.
+             (repo?)
+             (let [actual-url (origin-url)]
+               (if (= url actual-url)
+                 []                     ; url matches, we are good
+                 [(effect/warn (format "repo already exists with origin %s" actual-url))]))
+
+             ;; Directory exists but not empty or a repo.
+             :else
+             [(effect/warn "directory already exists")]
+             ))})

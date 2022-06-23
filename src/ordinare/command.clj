@@ -3,14 +3,14 @@
    [babashka.fs     :as fs]
    [clojure.string  :as str]
    [ordinare.config :as config]
-   [ordinare.effect :as effect]
    [ordinare.module :as module]
-   [ordinare.tree   :as tree]))
+   [ordinare.tree   :as tree])
+  (:refer-clojure :exclude [apply]))
 
 (defn display-path
   [module]
-  (let [m-path (-> module :opts :path)]
-    (if (-> module :context :level pos?)
+  (let [m-path (-> module :path)]
+    (if (-> module :ord/context :level pos?)
       m-path
       (let [path (fs/path (:work-dir config/*config*)
                           m-path)
@@ -22,7 +22,7 @@
             fs/normalize
             str)))))
 (comment
-  (display-path {:context {:level 1}, :opts {:path "foo"}})
+  (display-path {:ord/context {:level 1}, :opts {:path "foo"}})
   (display-path {:context {:level 0}, :opts {:path "."}})
   (display-path {:context {:level 0}, :opts {:path "src/ordinare"}})
   (display-path {:context {:level 0}, :opts {:path "src/ordinare/bin"}})
@@ -36,52 +36,57 @@
   )
 
 (defn- apply-effect
-  [arg-map effect-fn]
+  [arg-map apply-effects?]
   (-> arg-map
       :tree
+
       ;; Find any selected nodes, calculate the diff, and save any effects.
       (tree/pre-walk (fn [module]
                        (cond-> module
-                         (:selected? module)
-                         (assoc :effects (module/diff module)))))
+                         (:ord/selected? module)
+                         (assoc :ord/effects (module/diff module)))))
 
       ;; Determine visible nodes to display to the user.
       (tree/post-walk (fn [module]
                         (cond-> module
-                          (or (-> module :effects seq)
-                              (some :visible? (:children module)))
-                          (assoc :visible? true))))
+                          (or (-> module :ord/effects seq)
+                              (some :ord/visible? (:ord/children module)))
+                          (assoc :ord/visible? true))))
 
       ;; Print visible nodes indented w/ user friendly string.
       (tree/pre-walk (fn [module]
-                       (when (:visible? module)
-                         (let [depth  (-> module :context :level)
+                       (when (:ord/visible? module)
+                         (let [depth  (-> module :ord/context :level)
                                indent (->> \space
                                            (repeat (* depth 2))
                                            str/join)]
                            (print indent)
-                           (-> module display-path print)
-                           (println "/")
+                           (case (:ord/type module)
+                             :directory (do
+                                          (-> module display-path print)
+                                          (println "/"))
+                             (println (or (:ord/name module)
+                                          (:ord/type module))))
 
-                           ;; Print effects
+                           ;; Print and apply effects
                            (module/with-context-dir module
                              (fn [_]
-                               (when-let [effects (module :effects)]
+                               (when-let [effects (module :ord/effects)]
                                  (doseq [effect effects]
                                    (print indent)
                                    (print "  ")
-                                   (-> module (effect/->str effect) print)
-                                   (when effect-fn
-                                     (let [{:keys [_ok message]} (effect-fn module effect)]
-                                       (print " ")
-                                       (print message)))
+                                   (print (:message effect "?"))
+                                   (when apply-effects?
+                                     (when-let [f (:fn effect)]
+                                       ;; TODO add logging?
+                                       (f)))
                                    (println)))))))
                        module))))
 
 (defn status
   [arg-map]
-  (apply-effect arg-map nil))
+  (apply-effect arg-map false))
 
-(defn execute
+(defn apply
   [arg-map]
-  (apply-effect arg-map effect/apply!))
+  (apply-effect arg-map true))
