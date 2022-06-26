@@ -36,7 +36,8 @@
 ;; Specs for hiccup style configuration.
 (s/def ::type keyword?)
 (s/def ::fn   fn?)
-(s/def ::spec s/spec?)
+(s/def ::spec #(or (s/spec? %)
+                   (and (keyword? %) (namespace %))))
 (s/def ::name string?)
 (s/def ::module (s/keys :req-un [::type ::fn]
                         :opt-un [::spec ::name]))

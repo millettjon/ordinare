@@ -2,9 +2,11 @@
   (:require
    [clojure.spec.alpha :as s]
    [clojure.string     :as str]
+   [medley.core        :as medley]
    [ordinare.fs        :as fs]
    [ordinare.effect    :as effect]
-   [ordinare.process   :refer [$]]))
+   [ordinare.process   :refer [$]]
+   [ordinare.util      :as u]))
 
 ;; ----------
 ;; EFFECT HELPERS
@@ -37,17 +39,25 @@
 (s/def ::email      string?)
 (s/def ::user       (s/keys :opt-un [::name ::email]))
 
+(s/def ::defaultBranch string?)
+(s/def ::init          (s/keys :req-un [::defaultBranch]))
+
+(s/def ::config (s/keys :opt-un [::user ::init]))
+
 (def config
   {:type :git/config
-   :spec (s/keys :opt-un [::user])
+   :spec ::config
    :name "git config"
-   :fn   (fn [{:keys [user]}]
-           (mapv (fn [[k expected]]
-                   (let [actual (get-global-setting [:user k])]
+   :fn   (fn [module]
+           (->> module
+                (medley/remove-keys #(= "ord" (namespace %)))
+                u/flatten-map
+                (mapv
+                 (fn [[ks expected]]
+                   (let [actual (get-global-setting ks)]
                      (when (not= actual expected)
-                       {:fn      #(set-global-setting [:user k] expected)
-                        :message (format "set user.%s: %s -> %s" (name k) actual expected)})))
-                 user))})
+                       {:fn      #(set-global-setting ks expected)
+                        :message (format "set %s: %s    (was %s)" (->> ks (map name) (str/join ".")) expected actual)}))))))})
 
 ;; ----------
 ;; CLONE MODULE
