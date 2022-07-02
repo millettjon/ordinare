@@ -3,8 +3,9 @@
    [babashka.fs        :as fs]
    [clojure.spec.alpha :as s]
    [ordinare.module    :as module]
-   [ordinare.module.directory :refer [directory]]
+   [ordinare.module.fs :as o.fs]
    [ordinare.spec      :as o.s]
+   [ordinare.store     :as store]
    [ordinare.util      :as u]))
 
 (defn pre-walk-pc
@@ -52,6 +53,31 @@
                          :args         (s/* ::argument)
                          :ord/children (s/* ::child)))
 
+(defn- path->module
+  "Infers if path is a file or directory. Returns the appropriate module."
+  [path]
+  (let [store-path
+        (store/resolve path)
+
+        module
+        (cond
+          ;; file in store
+          (and (fs/exists? store-path)
+               (fs/regular-file? store-path))
+          o.fs/file
+
+          ;; file not in store
+          (fs/extension path)
+          o.fs/file
+
+          ;; directory
+          :else
+          o.fs/directory)]
+
+    (-> module
+        (u/qualify-keys :ord)
+        (assoc :path path))))
+
 (defn- normalize-node
   [node]
   (let [{:keys [tag opts]
@@ -64,10 +90,7 @@
         (dissoc :tag)
         (merge (let [[k v] tag]
                  (case k
-                   ;; sugar for a directory
-                   :path (-> directory
-                             (u/qualify-keys :ord)
-                             (assoc :path v))
+                   :path   (path->module v)
                    :module (u/qualify-keys v :ord)))))))
 
 (comment

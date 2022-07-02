@@ -1,4 +1,7 @@
-(ns ordinare.util)
+(ns ordinare.util
+  (:require
+   [clojure.string :as str])
+  (:refer-clojure :exclude [alias]))
 
 (defn qualify-keys
   "Qualifies keys in a map with the given namespace."
@@ -30,3 +33,22 @@
         ;; anything else is a leaf
         :else
         (recur (assoc m path x) rxs)))))
+
+(def INDENT-SPACES 2)
+
+(defn indent
+  ([depth]
+   (str/join (repeat (* depth INDENT-SPACES) \space)))
+  ([depth s]
+   (let [prefix (str/join (repeat (* depth INDENT-SPACES) \space))]
+     (->> s
+          str/split-lines
+          (mapv #(format "%s%s\n" prefix %))
+          str/join))))
+
+(defn prindent
+  "Portmanteau of print and indent."
+  [depth s]
+  (->> s
+       str/split-lines
+       (mapv #(print (indent depth %)))))

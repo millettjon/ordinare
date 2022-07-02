@@ -5,7 +5,8 @@
    [ordinare.config  :refer [*config*]]
    [ordinare.log     :as log]
    [ordinare.module  :as module]
-   [ordinare.tree    :as tree]))
+   [ordinare.tree    :as tree]
+   [ordinare.config :as config]))
 
 ;; Ref: http://docopt.org/
 (def usage "ordinare - organize directory
@@ -76,6 +77,7 @@ Options:
       dispatch-command))
 
 (defn -main [& args]
+  (config/start!)
   (docopt/docopt
    usage
    args

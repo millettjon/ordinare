@@ -1,16 +1,12 @@
 (ns ordinare.fs
   (:require
-   [babashka.fs :as fs])
+   [babashka.fs     :as fs])
   (:refer-clojure :exclude [empty?]))
-
-;; TODO - ? denote pure vs effectful functions?
-;;   - ? different ns?
 
 ;; TODO use babashka.fs version (w/ latest bb)
 (defn cwd
   []
   (System/getProperty "user.dir"))
-#_ (cwd)
 #_ (fs/cwd)
 
 (def ^:dynamic *cwd*
@@ -36,7 +32,7 @@
       fs/path
       java.nio.file.Files/readSymbolicLink))
 
-(defn- apply-cwd
+(defn apply-cwd
   [path]
   (if (fs/absolute? path)
     path
@@ -44,29 +40,21 @@
          (fs/path *cwd*)
          (fs/relativize (cwd)))))
 
-;; Wrappers
-
-;; TODO make macro for 2 arity wrapper
-(defn- wrap
+(defn wrap
   [f]
   (fn [path & args]
     (apply f (apply-cwd path) args)))
 
-(def canonicalize (wrap fs/canonicalize))
-(def create-sym-link (wrap fs/create-sym-link))
-(def delete     (comp fs/delete     apply-cwd))
-(def directory? (comp fs/directory? apply-cwd))
-(def empty?     (comp empty?*       apply-cwd))
-(def exists?    (comp fs/exists?    apply-cwd))
-(def read-link  (comp read-link*    apply-cwd))
+;; These depend on the working directory and need path arguments adjusted.
+(def canonicalize  (wrap fs/canonicalize))
+(def directory?    (comp fs/directory? apply-cwd))
+(def empty?        (comp empty?*       apply-cwd))
+(def exists?       (comp fs/exists?    apply-cwd))
+(def read-link     (comp read-link*    apply-cwd))
 (def regular-file? (wrap fs/regular-file?))
-(def sym-link?  (comp fs/sym-link?  apply-cwd))
+(def sym-link?     (comp fs/sym-link?  apply-cwd))
 
-;; TODO add 2 arity version to allow setting permissions
-(def create-dir (comp fs/create-dir apply-cwd))
-
-;; pure / pass through
-(def delete       fs/delete)
+;; These don't depend on the working directory so plumb straight through.
 (def expand-home  fs/expand-home)
 (def file-name    fs/file-name)
 (def normalize    fs/normalize)
@@ -75,3 +63,34 @@
 (def relative?    fs/relative?)
 (def relativize   fs/relativize)
 (def starts-with? fs/starts-with?)
+
+;; Note: Can't call process/$ directly since process depends on this ns.
+;; TODO fix
+(defn $
+  [& args]
+  (apply (requiring-resolve 'ordinare.process/$) args))
+
+(defn same?
+  [a b]
+  (try
+    ($ "diff" "-q" a b)
+    true
+    (catch Exception ex
+      (case (-> ex ex-data :exit)
+        1 false ; files are different
+        (throw ex)))))
+#_ (same? ".gitconfig" ".gitconfig")
+#_ (same? ".gitconfig" "foo")
+#_ (same? ".gitconfig" "notes.org")
+
+(defn diff
+  [a b]
+  (try
+    ($ "diff" a b)
+    ""
+    (catch Exception ex
+      (case (-> ex ex-data :exit)
+        1 (-> ex ex-data :out)
+        (throw ex)))))
+#_ (diff ".gitconfig" "notes.org")
+;; ? Use delta if available?

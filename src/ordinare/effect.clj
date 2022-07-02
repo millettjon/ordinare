@@ -1,8 +1,16 @@
-(ns ordinare.effect)
+(ns ordinare.effect
+  (:require
+   [clojure.string :as str]
+   [ordinare.process :as process]))
 
 (defn warn
   [message]
   {:message (format "WARNING: %s" message)})
+
+(defn $
+  [& args]
+  {:fn      #(apply process/$ args)
+   :message (str "$ " (str/join " " args))})
 
 ;; TODO works in cider repl but gnome-terminal shows as "?"
 (def white-check "\u2705")

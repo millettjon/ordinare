@@ -1,7 +1,6 @@
 (ns ordinare.config
   (:require
-   [babashka.fs :as fs]
-   [clojure.edn :as edn]))
+   [babashka.fs :as fs]))
 
 (defn find-config-dir
   []
@@ -27,10 +26,9 @@
          str
          load-file))))
 
-;; TODO run this during startup process instead of on file load
-;; - should print out details when verbose is enabled
-(def ^:dynamic *config*
-  (read-config))
+(def ^:dynamic *config* nil)
 
-#_(with-bindings {#'*config* {:foo "FOO"}}
-    *config*  )
+(defn start!
+  []
+  (alter-var-root #'*config* (constantly (read-config))))
+#_ (start!)

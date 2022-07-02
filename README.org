@@ -58,8 +58,6 @@ CONSTRAINTS
 - purpose
   - manage files in a directory
   - declaratively configure 3rd party things
-* module api
-- each module needs an update
 * bb tooling
 ** cider test runner doesn't work with bb
 - run test
@@ -73,13 +71,427 @@ Ref: https://github.com/clojure-emacs/cider/issues/3090
 rcf https://github.com/hyperfiddle/rcf
 
 * TASKS
-** symlink - get working
-** figure out naming convention: node vs module
-? node in tree.clj?
-? module everywhere else?
-? module everywhere?
+** file - syntax highlighted diff
+delta - https://github.com/dandavison/delta
 
-** firefox
+** ord init [<directory>]
+create git repo
+create store
+
+
+** ord add <file>
+- ? can this insert itself in the config?
+  - hard since clj
+  - maybe adds to an autoload path
+
+** ord watch
+-? how would this work?
+- build a list of targets and register callbacks for each path
+- ? watch each target?
+- ? watch the whole directory?
+  -? could this garbage collect files in real time?
+
+** gc module
+- delete unwanted files
+- this may be less useful if git is managing the directory (e.g. for a project)
+- ? is it useful to only delete if older than N days?
+
+** garbage collection
+;; -? how to clean up junk?
+;;    - recreate polluted files
+;;    - delete files
+;;    - delete whole directories
+;;
+;; -? how to identify unknown files?
+;;
+** ? update the lsp classpath to include the conf file so tooling works?
+-? anchor the project in the .ord dir?
+   ord init could add a bb.edn there that uses ord github as dep
+
+** shell prompt integration
+- status indicator
+** commands init/add/cd/edit/diff/watch/git/complete
+ord add <file>
+ord init
+  .ord/
+     config.clj
+     src/
+     store/
+     cache/ (files? sqlite? datalevin?)
+     .gitignore (cache)
+ord cd
+    ? how can this work? cd $(ord cd) ?
+ord edit <file> # one off edit of file/template -? does this imply watch? -? can this edit config.clj?
+ord diff
+ord commit? push? pull? # git passthrough?
+ord complete  # command line completion (babashka-cli?)
+ord watch     # watch config and store files, apply changes on save, reload apps
+
+** macos - dev setup from scratch
+*** PRINCIPLES
+# minimize modifications outside managed directory
+# components should work independently (unix philosophy) and do one thing well
+# keep under src to minimize virus scanning
+
+-? use a rules engine to figure out deps and protocol steps? asami/naga?
+   - ? naga?
+
+-? how to develop parts in isolation that work in the larger whole?
+-? what does interface look like?
+   - cli w/ edn/json stdout
+   - socket api
+     - unix?
+   - polylith
+
+-? may need 1 backup for data (to box)?
+-? may need second backup for .gpg and pass (to personal area)?
+   - seed -> gpg key -> yubi
+
+- sss master seed: 2/3 on steel
+   - seed -> gpg key -> (file | h/w token) -> (ssh & gpg)
+     - then can set new passphrase(key file) pin(h/w token)
+   - ? or just generate on company laptop?
+
+-? what would a secure seed station look like?
+   - fits in toolbox
+   - battery powered
+   - read only storage
+   - dice
+   - steel blanks
+   - tamper proofing for blanks
+   - ? how to safely extract data?
+     - generate seed words from dice
+     - generate sss shares 2/3 for recovery of seed
+     - generate password for gpg key (export on paper)
+     - generate encrypted gpg key from seed
+       -? is this possible to export as more seed words?
+     - ? seed words? 41?
+     - ? mini printer w/ qr code?
+
+-? personal passphrases?
+   - h/w token pin or gpg key passphrase (or only key)
+   - computer login password (can be reset from helpdesk) (or only key)
+
+- note: fido is needed for some services
+  - only solution is 2 keys or admin reset
+
+-? how to memorize secrets? (daily use?)
+   - phone pin
+   - hardware token pin
+
+-? how to generate a few passwords deterministically for recovery?
+   - okta
+     a) save on passwords slot on device
+     b) regenerate from seed
+     c) reset from tech support
+   - github (since account is personal)
+     a) save on passwords slot on device
+     b) regenerate from seed
+
+DETERMINISTIC ENCRYPTION
+old example: https://www.rempe.us/strongpass/
+seed tool: https://github.com/BlockchainCommons/seedtool-cli
+  - not in nix
+sha256
+  - on a) seed + b) site + c) version
+  # Note: seed needs to be long to prevent rainbow table attacks
+  # - ? is a salt needed if the seed has large entropy?
+  # Note: seed tool is still useful for generating the seed and converting formats
+  # seed can be generated with dice
+  # - https://github.com/veebch/Bip39-Dice/blob/master/BIP39DiceManualCalculator.pdf
+  # - https://github.com/taelfrinn/Bip39-diceware
+  #
+  # entropy: target 120 bits
+  #   -? how many seed words are needed? 11 words (2048 words, 11 bits per word)
+  #      - round up to 12 (since is a common standard and provides a bit more room)
+  # generate 20 base64 char password (120 bits)
+  $ echo test.github.1 | sha256sum | xxd -r -p | base64 | head -c 20
+  K2lm+XxryGzwqipbc5G0
+  -? how to keep track of versions? (personal pass)
+  -? how to handle char requirements? (add to end and save in personal pass)
+  -? is a salt needed? going to ignore since using a strong seed
+seedtool
+  # deterministic
+  seedtool-cli -d=xyzzy.gpg.1  | xxd -r -p | base64
+  YF88LIgrGnwipNyd4ON2kA==
+
+12:30 maria appointment
+
+OPEN BLOCKCHAIN COMMONS
+seed tool: https://github.com/BlockchainCommons/seedtool-cli
+sskr guide: https://github.com/BlockchainCommons/crypto-commons/blob/master/Docs/ur-3-sskrs.md
+sskr: https://github.com/BlockchainCommons/crypto-commons
+anti tampering: https://github.com/BlockchainCommons/crypto-commons/blob/master/Docs/sskr-cold-storage.md
+custody book: https://www.smartcustody.com/
+ur: https://github.com/BlockchainCommons/crypto-commons/blob/master/Docs/ur-1-overview.md
+  - standard way to encode CBOR data into a uri
+
+WORK SECURITY
+- if using personal pass
+  - okta (for box backup)
+  - gpg (ssh access to git)
+    - key
+    - passphrase
+  - github passphrase (? alternative to gpg key?)
+- if using deterministic seed words (personal pass)
+  - generate
+    - gpg (only used for pass and ssh to github)
+      - key (pgpkey seed.gpg.1 + creation-date)
+      - passphrase (<seed>.gpg-passphrase.1[20], onlykey)
+    - okta (<seed>.okta.1[15]})
+      - ? how to auto login and stay logged in?
+      - ? how to re-login to jira, github, confluence?
+        -? why do those not work when redirecting to okta?
+    - github (<seed>.github.1[20])
+      - note: github does not log me out, just the dividend enterprise access token expires
+- onlykey
+  - user login (<seed>.laptop.1[20]) (also recoverable by tech support)
+  - gpg key passphrase
+  - okta?
+
+gopass
+https://github.com/gopasspw/gopass
+
+*** Use Cases
+install from scratch
+install from backup
+  - deps
+    - okta 2fa access
+      - password (personal pass)
+      - 2fa device (phone)
+    - box access (via okta)
+    - gpg key
+      - file
+        - recreate from seed words and creation timestamp (personal pass)
+    - github account access
+      - password (personal pass)
+      - fido key
+      - ssh key (from gpg key)
+install over existing
+
+*** NOTES
+- mkdir src && cd src
+- git clone lab
+- lab/bin/enter
+  - ? explicit configure or auto configure?
+    - auto configure if not configured
+    - re-run configure if last configure > N days
+  - loads nix-shell
+  - starts services
+  - starts scheduler
+  - ? how to manage things in home dir?
+    - ~/.ord - ? auto generate if not present?
+- ? does it need to subvert HOME?
+  - better if it can co-exist
+- manage brew packages
+- configure chrome
+  - extensions
+    - react dev tools
+  - bookmarks
+- manage self installable packages (jon)
+- configure passwords
+  - ? how to manage team secrets?
+  - pass
+    - ? unlock w/ yubikey?
+  - gpg w/ yubi
+    https://github.com/drduh/YubiKey-Guide#multiple-yubikeys
+- disable screen lock (caffeine)
+- work w/ nix environment
+  - ? how to pin?
+- ? place stuff under src/ to minimize virus scanning?
+- use ord to auto manage all files under home
+  - collect garbage
+  - report status on unmanaged items
+  - checkout git repos
+    cc, xanadu, innsmouth, jarvis, semi-auto, blackbook
+  - intstall tooling
+- ? shared emacs code?
+- ? example minimal emacs config?
+
+** configure personal services to run at login
+- ? zsh?
+** configure personal task scheduler
+- mcron
+** configure scheduled backups
+-? split out for server vs personal?
+   - for linux, better to save all
+   - for macos, just save home
+*** atat
+** rules engine
+process event streams
+- email
+- chat
+- service log notifications
+- new device files
+  - photos
+  - videos
+- social media streams
+  - google
+  - instagram
+  - facebook
+- rss feeds
+** run stuff at login
+- .bash_profile
+- .xinitrc
+
+macos
+- cache passwords longer in gpg-agent
+- auto relogin to okta
+  - ? would a browser plugin to periodically use it help?
+  - linux android vm in a box
+    - install okta app
+    - auto auth pushes
+- browser plugin to steal auth cookies from sites
+  - use in cli apps
+  - forward for use on other laptop
+- run scheduled backups
+  - start scheduler
+    - scheduler runs backups
+- optionally keep a tmux connected to services for easy log viewing and interaction
+  - this is more useful for services related to a dev env
+  - more just to contain the logging and restart w/ control-c
+
+** local daemon manager
+- shepherd: https://www.gnu.org/software/shepherd/
+  - guile
+  - guix
+  - user service example: https://guix.gnu.org/en/blog/2020/gnu-shepherd-user-services/
+- runit
+- openrc
+- containers
+- vms
+
+- systemd has wide support
+- daemontools has better design
+- ? tmux to access consoles?
+- ? control?
+- ? logging?
+- ? scheduling?
+- ? dependencies?
+** local scheduler
+https://github.com/overtone/at-at
+-? does it work in bababashka?
+-? how many resources does it need?
+
+overtone/at-at {:mvn/version "1.2.0"}
+- ? cli wrapper?
+  - service wrapper to start/stop/reload/status
+
+-? can it track executions across invocations?
+
+** local datastore
+- ? what is the sweetspot?
+  = 1 primary laptop
+  = offline first
+  = data store per app
+  = easy to backup/restore
+- ? crdt?
+  - would be nice but p2p generally not needed
+  - ? might work synching system level config?
+  - can be accomplished by declarative conf + git
+- xtdb vs datalevin
+  - xtdb - bitemporal
+    - can use in memory rocks db backed by local dir
+  - datalevin
+    - uses lmdb for local storage
+    - should be better for small projects
+    - has babashka pod and graal binary
+    - ? no db as value?
+-? what are some personal use cases?
+  - accounting
+    - crypto transactions
+  - personal usage metrics
+    - cli commands
+    - emacs commands
+  - logging biometric data
+  - better browser history
+  - semantic view of git
+  - organize photos
+  - organize file system
+    - dedup
+    - git annex
+-? is naga rules engine useful?
+
+xtdb
+datomic
+datascript
+datalevin
+  https://github.com/juji-io/datalevin
+  - simple, durable, datalog, lmdb, embeddable, no tx history
+  - bb pod, text search, graal image, cli tool dtlv
+  - used by clojure-lsp
+  - ? how to merge?
+   - https://stackoverflow.com/questions/33443020/merge-two-lmdb-databases-for-feeding-to-the-network-caffe
+  - ? has given up on the database as a value?
+datahike
+  - https://github.com/replikativ/datahike
+replikativ
+  - https://github.com/replikativ/replikativ/
+  - uses CRDT
+  - no progress since 2018
+asami
+  - graph database
+  - naga - execute rules on a graph database (asami or datomic)
+eva
+  - https://github.com/Workiva/eva/
+  - mostly like datomic
+  - no longer active?
+
+crdt (conflict free replicated data)
+  - discussion: https://clojurians-log.clojureverse.org/local-first-clojure/2020-04-29
+  - schism: https://github.com/aredington/schism
+  - cause: https://github.com/smothers/cause
+
+misc
+  - hash - sha-512 edn hashes
+    https://github.com/replikativ/hasch
+  - kambell - entity layer (w/ specs) for key values store
+    https://github.com/danielsz/kampbell
+
+browser extension:
+  https://github.com/homebaseio/datalog-console
+
+redplanet
+hyperfiddle
+  missionary
+  rcf
+
+** firefox - configure
+- command line arguments: http://kb.mozillazine.org/Command_line_arguments
+- home-manager: https://discourse.nixos.org/t/firefox-extensions/1122/19
+- bookmarks: https://stackoverflow.com/questions/51124179/how-can-i-add-or-remove-a-bookmark-tag-in-firefox-via-the-command-line
+  - ? better in org?
+  - ? dedicated bookmark sync tool?
+  - ? datalog db?
+
+- list profiles
+  ~/.mozilla/firefox/
+    lock
+    profiles.ini
+    s9nbfu62.default/
+      addons.json
+      cookies.sqlite
+      places.sqlite
+      extensions-preferences.json
+
+- get installed version of add on
+- get available version of add on
+- download add on
+- install add on
+- upgrade add on
+- remove add on (or just delete profile?)
+- update search engine list
+- update bookmarks list
+- update settings
+  - disable notifications
+  - disable saving passwords
+- delete profile
+- auto clear history
+- auto clear cookies
+- set as default browser
+  https://wiki.mozilla.org/Firefox/CommandLineOptions#-setDefaultBrowser
+  -? what does this do?
+
 ** test - get basic tests working
 ** test - watch files and autorun tests
 ** tap - find a way to hookup (emacs? reveal?)
@@ -181,39 +593,6 @@ https://gitlab.freedesktop.org/hadess/iio-sensor-proxy/
 - disable screen saver
 - set screen brightness
 - set keyboard brightness
-** configure firefox
-- command line arguments: http://kb.mozillazine.org/Command_line_arguments
-- home-manager: https://discourse.nixos.org/t/firefox-extensions/1122/19
-- bookmarks: https://stackoverflow.com/questions/51124179/how-can-i-add-or-remove-a-bookmark-tag-in-firefox-via-the-command-line
-
-- list profiles
-  ~/.mozilla/firefox/
-    lock
-    profiles.ini
-    s9nbfu62.default/
-      addons.json
-      cookies.sqlite
-      places.sqlite
-      extensions-preferences.json
-
-- get installed version of add on
-- get available version of add on
-- download add on
-- install add on
-- upgrade add on
-- remove add on (or just delete profile?)
-- update search engine list
-- update bookmarks list
-- update settings
-  - disable notifications
-  - disable saving passwords
-- delete profile
-- auto clear history
-- auto clear cookies
-- set as default browser
-  https://wiki.mozilla.org/Firefox/CommandLineOptions#-setDefaultBrowser
-  -? what does this do?
-
 ** geoip/vpn/network status in bar
 - ? can bar be transparent?
 ** exwm
@@ -228,6 +607,34 @@ Bus 003 Device 002: ID 1c7a:0575 LighTuning Technology Inc. EgisTec EH575
 
 https://fprint.freedesktop.org/
 
+* chezmoi
+https://www.chezmoi.io/
+- similar goals to ordinare and home-manager
+- lots of contributors but worse than both
+
+NEGATIVES
+- only manages home directory (not projects)
+- doesn't work for teams (only 1 user across machines)
+- monolithic and not composable (single git repo)
+- integration with secrets is questionable
+  - ? why would i copy my secrets to remote machines?
+    = better to use split/gpg w/ tunneling
+  - ? why would i mix personal and work secrets?
+    = better to keep them totally separate
+- uses templates (lowest common denominator)
+- likely can't handle binary files
+- use git for diff (no semantic diff resource type)
+- scripting is limited to basic hooks at the top level
+- no programming language
+- toml configuration format
+
+POSITIVES
+- good cli
+- good docs
+- large community
+
+* age - sort of like gpg
+https://github.com/FiloSottile/age
 * directory management
 - standalone git project
 - git annex?
@@ -258,6 +665,7 @@ https://msucharski.eu/posts/application-isolation-nixos-containers/
 - gpg key
   https://github.com/summitto/pgp-key-generation/
   dev list thread: https://dev.gnupg.org/T169
+  https://github.com/skeeto/passphrase2pgp
 - data cache
 - for borg, use repo key?
 

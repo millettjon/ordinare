@@ -24,13 +24,19 @@
   module)
 
 (defn context-dir
-  [node]
+  [module]
   (->> [(:work-dir *config*)
-        (-> node :ord/context :path)]
+        (-> module :ord/context :path)]
        (remove nil?)
        (apply fs/path)
        fs/normalize
        str))
+
+;; For repl use.
+(defn start!
+  []
+  (alter-var-root #'fs/*cwd* (constantly (context-dir nil))))
+#_ (start!)
 
 (defn with-context-dir
   [module f]

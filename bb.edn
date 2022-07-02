@@ -4,6 +4,7 @@
         camel-snake-kebab/camel-snake-kebab {:mvn/version "0.4.3"}
         clojure-ini/clojure-ini             {:mvn/version "0.0.2"}
         medley/medley                       {:mvn/version "1.4.0"}
+        ;; org.clj-commons/digest              {:mvn/version "1.4.100"}
 
         ;; specs
         org.babashka/spec.alpha     {:git/url "https://github.com/babashka/spec.alpha"

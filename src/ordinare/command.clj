@@ -1,10 +1,10 @@
 (ns ordinare.command
   (:require
    [babashka.fs     :as fs]
-   [clojure.string  :as str]
    [ordinare.config :as config]
    [ordinare.module :as module]
-   [ordinare.tree   :as tree])
+   [ordinare.tree   :as tree]
+   [ordinare.util   :as u])
   (:refer-clojure :exclude [apply]))
 
 (defn display-path
@@ -32,8 +32,7 @@
   (fs/canonicalize "~/src")             ; nope
   (fs/normalize "~/src")                ; nope
   (fs/expand-home "~/src")              ; works
-  (fs/home)
-  )
+  (fs/home))
 
 (defn- apply-effect
   [arg-map apply-effects?]
@@ -56,31 +55,38 @@
       ;; Print visible nodes indented w/ user friendly string.
       (tree/pre-walk (fn [module]
                        (when (:ord/visible? module)
-                         (let [depth  (-> module :ord/context :level)
-                               indent (->> \space
-                                           (repeat (* depth 2))
-                                           str/join)]
-                           (print indent)
+                         ;; Print module header.
+                         (let [depth (-> module :ord/context :level)]
+                           (print (u/indent depth))
                            (case (:ord/type module)
                              :directory (do
                                           (-> module display-path print)
                                           (println "/"))
-                             (println (or (:ord/name module)
+                             (println (or (when-let [name (:ord/name module)]
+                                            (if (fn? name)
+                                              (name module)
+                                              name))
                                           (:ord/type module))))
 
-                           ;; Print and apply effects
+                           ;; Print and apply effects.
                            (module/with-context-dir module
                              (fn [_]
                                (when-let [effects (module :ord/effects)]
                                  (doseq [effect effects]
-                                   (print indent)
-                                   (print "  ")
-                                   (print (:message effect "?"))
+                                   (u/prindent (inc depth) (:message effect "?"))
                                    (when apply-effects?
                                      (when-let [f (:fn effect)]
                                        ;; TODO add logging?
-                                       (f)))
-                                   (println)))))))
+                                       (f)))))))
+
+                           ;; Run callback
+                           (when-let [on-apply (:on-apply module)]
+                             (u/prindent (inc depth) "on-apply")
+                             (u/prindent (+ 2 depth) (:message on-apply))
+                             (when apply-effects?
+                               (when-let [f (:fn on-apply)]
+                                 ;; TODO add logging?
+                                 (f))))))
                        module))))
 
 (defn status
