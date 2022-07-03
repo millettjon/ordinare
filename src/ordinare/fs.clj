@@ -1,6 +1,7 @@
 (ns ordinare.fs
   (:require
-   [babashka.fs     :as fs])
+   [babashka.fs    :as fs]
+   [clojure.string :as str])
   (:refer-clojure :exclude [empty?]))
 
 ;; TODO use babashka.fs version (w/ latest bb)
@@ -85,12 +86,15 @@
 
 (defn diff
   [a b]
-  (try
-    ($ "diff" a b)
-    ""
-    (catch Exception ex
-      (case (-> ex ex-data :exit)
-        1 (-> ex ex-data :out)
-        (throw ex)))))
+  (let [delta? (fs/which "delta")]
+    (try
+      (if delta?
+        (-> ($ "delta" "--line-numbers" "--file-style=omit" "--hunk-header-style=omit" a b))
+        ($ "diff" a b))
+      (catch Exception ex
+        (case (-> ex ex-data :exit)
+          1 (-> ex ex-data :out
+                ;; remove leading blank line
+                (str/replace #"^\s*\n" ""))
+          (throw ex))))))
 #_ (diff ".gitconfig" "notes.org")
-;; ? Use delta if available?

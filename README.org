@@ -74,10 +74,65 @@ rcf https://github.com/hyperfiddle/rcf
 ** file - syntax highlighted diff
 delta - https://github.com/dandavison/delta
 
+** ord update
+- update
+  - git repos
+  - nix packages
+  - github packages
+** firefox - configure
+- command line arguments: http://kb.mozillazine.org/Command_line_arguments
+- home-manager: https://discourse.nixos.org/t/firefox-extensions/1122/19
+- bookmarks: https://stackoverflow.com/questions/51124179/how-can-i-add-or-remove-a-bookmark-tag-in-firefox-via-the-command-line
+  - ? better in org?
+    - ? just keep small list?
+  - ? dedicated bookmark sync tool?
+  - ? datalog db?
+
+- list profiles
+  ~/.mozilla/firefox/
+    lock
+    profiles.ini
+    s9nbfu62.default/
+      addons.json
+      cookies.sqlite
+      places.sqlite
+      extensions-preferences.json
+
+- get installed version of add on
+- get available version of add on
+- download add on
+- install add on
+- upgrade add on
+- remove add on (or just delete profile?)
+- update search engine list
+- update bookmarks list
+- update settings
+  - disable notifications
+  - disable saving passwords
+- delete profile
+- auto clear history
+- auto clear cookies
+- set as default browser
+  https://wiki.mozilla.org/Firefox/CommandLineOptions#-setDefaultBrowser
+  -? what does this do?
+
+** firefox
+- containers for: personal, finance, private, torrent/junk
+- profiles per container
+- ad block
+- darkmode
+- activate reader view
+- built in reader view
+- kill-sticky
+  bookmarklet that kills static items that don't scroll
+  https://github.com/t-mart/kill-sticky
+- translator
+- language packs
+- pass integration
+
 ** ord init [<directory>]
 create git repo
 create store
-
 
 ** ord add <file>
 - ? can this insert itself in the config?
@@ -456,42 +511,6 @@ hyperfiddle
   missionary
   rcf
 
-** firefox - configure
-- command line arguments: http://kb.mozillazine.org/Command_line_arguments
-- home-manager: https://discourse.nixos.org/t/firefox-extensions/1122/19
-- bookmarks: https://stackoverflow.com/questions/51124179/how-can-i-add-or-remove-a-bookmark-tag-in-firefox-via-the-command-line
-  - ? better in org?
-  - ? dedicated bookmark sync tool?
-  - ? datalog db?
-
-- list profiles
-  ~/.mozilla/firefox/
-    lock
-    profiles.ini
-    s9nbfu62.default/
-      addons.json
-      cookies.sqlite
-      places.sqlite
-      extensions-preferences.json
-
-- get installed version of add on
-- get available version of add on
-- download add on
-- install add on
-- upgrade add on
-- remove add on (or just delete profile?)
-- update search engine list
-- update bookmarks list
-- update settings
-  - disable notifications
-  - disable saving passwords
-- delete profile
-- auto clear history
-- auto clear cookies
-- set as default browser
-  https://wiki.mozilla.org/Firefox/CommandLineOptions#-setDefaultBrowser
-  -? what does this do?
-
 ** test - get basic tests working
 ** test - watch files and autorun tests
 ** tap - find a way to hookup (emacs? reveal?)
@@ -505,14 +524,6 @@ ord init
 
 ** dev - github repo
 ** doc gen script
-** firefox
-- ad block
-- darkmode
-- activate reader view
-- built in reader view
-- kill-sticky
-  bookmarklet that kills static items that don't scroll
-  https://github.com/t-mart/kill-sticky
 ** auto run test script
 ** load keys into keychain
 - ? which pin entry?
