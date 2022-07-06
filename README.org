@@ -71,9 +71,279 @@ Ref: https://github.com/clojure-emacs/cider/issues/3090
 rcf https://github.com/hyperfiddle/rcf
 
 * TASKS
-** file - syntax highlighted diff
-delta - https://github.com/dandavison/delta
+** ord - display output while running on-apply
+indented
+** ord - better exception handling
+** ord - prompt before applying
+** sugar syntax
+- diagram (kroki?)
+  DIRECTORY := string?
+  FILE := string?
+  OPTS  := map?
+  CHILD := vector?
+  ARG*  := any?
 
+  DIRECTORY            OPTS?  CHILD*
+  (KEYWORD|SYMBOL|FN)  OPTS?  ARG*
+
+= only directories can have children
+= directories cannot have arguments
+
+-? how to distinguish?
+   DIRECTORY     # create empty directory
+   FILE          # create empty file (touch?)
+   -? disallow a FILE with no arguments? NO, too useful
+      FILE ""      # create empty file
+      FILE :touch  # similar but just touches
+   -? use the type from the store? YES, if available
+      - can't rely on this for all cases as nothing may be in the store
+   -? use / at the end of directory name?
+   - report an error if indeterminate
+     -? how to break a tie?
+        - if no children, assume it is a file
+          - throw error later if no file in store?
+        - ? use / at end of dir to force it to be a dir?
+        - ? use FILE "" to force it to be an empty file?
+
+= it is very convienent to just pass a file name
+
+-? what are the use cases for FILE?
+#+begin_src clojure
+  DIR/             ; create empty directory (if ends with /)
+  FILE             ; copy from store (must exist)
+  FILE ""          ; create empty file
+  FILE :touch      ; is this needed? useful for cache invalidation?
+  FILE "foo"       ; create file with contents "foo"
+  ;; render file from string template
+  FILE :render "{{email}}@bar.com"           ; use data from global :data section
+  FILE :render "foo{{xyz}}bar" {:xyz "me"}   ; or pass data explicitly
+  ;; render file from template in store
+  FILE :render          ; use global data
+  FILE :render {:a 42}  ; w/ data
+#+end_src
+
+-? what do these look like when normalized?
+#+begin_src clojure
+  {:type :file}
+  FILE ""
+  {:content ""}
+
+  FILE :touch
+  {:action :touch}
+
+  ;; create file from string
+  FILE "foo"
+  {:content "foo"}
+
+  ;; copy file from store
+  FILE
+  {:action :copy}
+
+  ;; render file from string
+  ;; using global data
+  FILE :render "{{email}}@bar.com"
+  {:action :render, :content "{{email}}@bar.com"}
+
+  ;; using explicit data
+  FILE :render "foo{{xyz}}bar" {:xyz "me"}
+  {:action :render, :content "foo{{xyz}}bar", :data {:xyz "me"}}
+
+  ;; render file from store
+  FILE :render
+  {:action :render}
+
+  FILE :render {:a 42}
+  {:action :render, :data {:a 42}}
+
+#+end_src
+
+-? what do these print?
+-? how to test what gets printed?
+   - ? capture stdout?
+
+ord add <foo>    # add file <foo> to the store in the same path it has in the work-dir
+ord edit <foo>   # open file <foo> in the store in $EDITOR
+
+-? how to handle cd?
+ord cd               # not possible, can only output dir
+ord shell [<dir>]    # open a new $SHELL in config-dir or location of <dir> in store
+
+** ? how to securely send point to point email to protonmail?
+- use pgp to encrypt to public key
+  -? how to get public key?
+  -? how to send a message?
+
+-? is there a non standard port to send on?
+-? how to authenticate to the proton mail servers?
+-? dedicated service address?
+
+https://superuser.com/questions/188493/how-can-i-send-gpg-encrypted-mail-automatically-from-the-linux-command-line
+gpg -ea -r "Recipient name" -o - filename | mail -s "Subject line" recipient@example.com
+
+-? what mail client to use?
+
+-? can mutt do it non-interactively?
+https://www.oreilly.com/library/view/linux-security-cookbook/0596003919/ch08s06.html
+
+2525? - requires password
+
+-? free irc service?
+
+** proton mail
+*** keys
+can upload or download key pair
+https://proton.me/support/download-public-private-key
+
+*** 2fa
+https://proton.me/support/two-factor-authentication-2fa
+- uses phone app that generates a 6 digit code
+  - there are recovery codes
+- resetting the password disables 2fa
+- yubikey can store TOTP tokens
+  - requires yubikey authenticator app
+- OnlyKey can do it
+https://onlykey.io/collections/all/products/onlykey-duo-dual-usb-c-and-usb-a-security-key?variant=40529423040698
+*** two password mode
+- use one password to login and another password for each mailbox
+https://proton.me/support/single-password
+- can be combined w/ 2fa
+
+** kitty - fullscreen
+ctrl+shift+F11
+kitty --start-as=fullscreen
+
+** scheduled jobs
+- backup
+- ord status report
+  - git repos
+    - unstaged changes
+    - untracked files
+    - out of date branches
+  - nix
+    - new channel release available
+    - out of data packages
+    - system, home, project
+  - garbage files
+- health ping
+  - hc-ping.com
+  - healthchecks.io
+** how to manage a calendar
+** deadman service
+- ? homomorphic encryption?
+- ? btc/eth integration?
+** scheduler
+- mcron
+- atat
+** shepherd
+- https://www.gnu.org/software/shepherd/manual/
+
+** borg
+- ? system level or user level?
+** firefox - user prefs
+# block "before you leave this page" popups
+set the dom.disable_beforeunload pref to true on the about:config page to disable this alert.
+
+# disable print headers
+https://mkaz.blog/misc/using-firefox-user-js-settings-file/
+
+# maximize privacy
+https://github.com/pyllyukko/user.js/blob/master/user.js
+
+# disable notifications
+user_pref("dom.webnotifications.enabled",			false);
+
+# disable geo location
+user_pref("geo.enabled",					false);
+
+# disable password manager
+user_pref("signon.rememberSignons",				false);
+
+** firefox - containerize
+podman
+** kroki diagrams
+- https://kroki.io/examples.html#blockdiag
+- bb https://gist.github.com/henryw374/070845dbd8cfb4672a3c0d06cf8b00e4
+** ord apply - prompt before applying side effects
+** starship.rs - copy fish integration from string
+https://starship.rs/
+
+** delete Trash
+.local/share/Trash
+
+gc .local/share/Trash
+:older-than "30d"
+
+** difftastic - try it
+https://github.com/Wilfred/difftastic
+** delta - configure git to use it
+** home-manager
+= use home-manager since that is the standard for managing user homes
+  - use for nix packages
+  - use for app config where convenient
+  - learn about it
+  - see how to interface with ord
+
+# install
+# Ref: https://nix-community.github.io/home-manager/index.html#sec-install-standalone
+nix-channel --add https://github.com/nix-community/home-manager/archive/master.tar.gz home-manager
+nix-channel --update
+
+# Adjust NIX path which eas missing ~/.nix-defexp/channels for some reason.
+export NIX_PATH=$HOME/.nix-defexpr/channels${NIX_PATH:+:$NIX_PATH}
+
+# Install home manager.
+nix-shell '<home-manager>' -A install
+
+# Config is in.
+/home/jam/.config/nixpkgs/home.nix
+
+- ? How to manage separate profiles for work and home?
+    https://nix-community.github.io/home-manager/index.html#_how_to_set_up_a_configuration_for_multiple_users_machines
+    - keep separate top level config point ~/.config/nixpkgs/home.nix to it
+- ? embed this in ord? YES
+- ? How will ord manage separate profiles for work and home?
+  - compose as clojure data in config.clj
+
+-? how does shell launch?
+   - terminal configuration
+-? how to bootstrap?
+** fish - plugins
+omf    oh-my-fish
+fisher https://github.com/jorgebucaran/fisher
+fzf https://www.reddit.com/r/fishshell/comments/t9yinj/what_are_your_favorite_fish_plugins/
+autopair https://github.com/jorgebucaran/autopair.fish
+** ord - completion
+** fish, kitty integration
+https://sw.kovidgoyal.net/kitty/shell-integration/#manual-shell-integration
+** fish - get working with nix-shell
+** clj-nix - custom bb builds
+https://github.com/jlesquembre/clj-nix#mkbabashka
+** nix-shell
+- zsh w/ nix-shell
+  - https://github.com/chisui/zsh-nix-shell
+  - https://ianthehenry.com/posts/how-to-learn-nix/nix-zshell/
+  - https://github.com/haslersn/any-nix-shell
+
+- direnv w/ nix-shell
+  https://github.com/nix-community/nix-direnv
+
+** direnv w/ nix-shell
+** new cli tools
+https://thelicato.medium.com/17-stunning-modern-unix-tools-e32d4f0efb64
+ls - exa  https://github.com/ogham/exa
+tree broot https://github.com/Canop/broot
+find fd https://github.com/sharkdp/fd
+ripgrep https://github.com/BurntSushi/ripgrep
+mcfly https://github.com/BurntSushi/ripgrep
+dig dog https://github.com/ogham/dog
+cheat https://github.com/cheat/cheat
+gtop https://github.com/aksakalli/gtop
+ps procs https://github.com/dalance/procs
+ping gping https://github.com/orf/gping
+
+** kitty open new shell in same directory
+** ord add
+add into EAV database and merge with config.clj
 ** ord update
 - update
   - git repos
@@ -120,6 +390,8 @@ delta - https://github.com/dandavison/delta
 - containers for: personal, finance, private, torrent/junk
 - profiles per container
 - ad block
+- vimium
+- set search engines
 - darkmode
 - activate reader view
 - built in reader view
@@ -617,6 +889,36 @@ Bus 003 Device 002: ID 1c7a:0575 LighTuning Technology Inc. EgisTec EH575
 - should be supported in libfprint
 
 https://fprint.freedesktop.org/
+
+* emacs - git gutter
+- review current doom code
+- figure out how hydra works (stage/revert/unstage)
+= current config doesn't show deletions
+= current config fringe indicator is not continous when more than 1 line
+
+https://www.reddit.com/r/emacs/comments/cbh8f0/minimal_looking_diff_in_fringegutter/
+https://ianyepan.github.io/posts/emacs-git-gutter/
+https://github.com/dgutov/diff-hl#screenshots
+https://github.com/doomemacs/doomemacs/tree/screenshots
+* leaky cwd abstraction
+;; = leaky abstraction
+;; = ? how to know if path needs adjusted or not?
+;;   -? use path object and apply meta data?
+;;
+;; set-cwd     ; with-cwd?
+;; clear-cwd
+;; apply-cwd   ; maybe only this one is needed (produces a full path)
+;; get-cwd     ; used to a) compare 2 paths, b) extract to run a process with that cwd
+;; -? should there be a predicate to check if a relative path has a cwd?
+;;    -? what should it be named?
+;;       qualfied?
+;;       wd?
+;; +? how is this different than a fully qualified path?
+;;   if fully qualified, the information about the root is lost and
+;;   there is no way to reparent it relative to something else
+;; +? can these be nested? doesn't make sense. there is only 1 cwd we are working around
+
+;; The jvm limits the usefulness of relative paths since the current working directory cannot be changed.
 
 * chezmoi
 https://www.chezmoi.io/

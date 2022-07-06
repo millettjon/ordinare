@@ -89,6 +89,13 @@
                                  (f))))))
                        module))))
 
+;; TODO This has no way to change the directory in the shell.
+;; or exec a shell in the directory
+;; or run a command from the directory
+#_(defn wd
+  [_arg-map]
+  (->> config/*config* :config-dir println))
+
 (defn status
   [arg-map]
   (apply-effect arg-map false))

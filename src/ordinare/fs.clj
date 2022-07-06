@@ -2,7 +2,7 @@
   (:require
    [babashka.fs    :as fs]
    [clojure.string :as str])
-  (:refer-clojure :exclude [empty?]))
+  (:refer-clojure :exclude [empty? slurp]))
 
 ;; TODO use babashka.fs version (w/ latest bb)
 (defn cwd
@@ -55,6 +55,13 @@
 (def regular-file? (wrap fs/regular-file?))
 (def sym-link?     (comp fs/sym-link?  apply-cwd))
 
+(defn slurp
+  [path]
+  (-> path
+      apply-cwd
+      str
+      clojure.core/slurp))
+
 ;; These don't depend on the working directory so plumb straight through.
 (def expand-home  fs/expand-home)
 (def file-name    fs/file-name)
@@ -65,36 +72,40 @@
 (def relativize   fs/relativize)
 (def starts-with? fs/starts-with?)
 
+;; Things that call $ don't need the working directory adjusted since $ does it.
+
 ;; Note: Can't call process/$ directly since process depends on this ns.
 ;; TODO fix
 (defn $
   [& args]
   (apply (requiring-resolve 'ordinare.process/$) args))
 
-(defn same?
-  [a b]
-  (try
-    ($ "diff" "-q" a b)
-    true
-    (catch Exception ex
-      (case (-> ex ex-data :exit)
-        1 false ; files are different
-        (throw ex)))))
-#_ (same? ".gitconfig" ".gitconfig")
-#_ (same? ".gitconfig" "foo")
-#_ (same? ".gitconfig" "notes.org")
-
+;; Compares a to b.
+;; - b can be either a String to pass on stdin
+;;   or a UnixPath to pass as a file argument
+;; - Returns nil if they match.
+;; TODO: make this better and able to handle - in either argument
 (defn diff
   [a b]
-  (let [delta? (fs/which "delta")]
+  (let [delta? (fs/which "delta")
+        args (if delta?
+               ["delta" "--line-numbers" "--file-style=omit" "--hunk-header-style=omit"]
+               ["diff"])
+
+        ;; If a doesn't exist, compare against /dev/null
+        a (if (exists? a) a "/dev/null")
+
+        ;; Not sure why pr-str is needed here
+        args   (case (-> b type pr-str)
+                 "java.lang.String"    (concat [{:in b}] args [a "-"])
+                 "sun.nio.fs.UnixPath" (concat           args [a b]))]
     (try
-      (if delta?
-        (-> ($ "delta" "--line-numbers" "--file-style=omit" "--hunk-header-style=omit" a b))
-        ($ "diff" a b))
+      (apply $ args)
+      ;; return nil if files are the same
+      nil
       (catch Exception ex
         (case (-> ex ex-data :exit)
           1 (-> ex ex-data :out
                 ;; remove leading blank line
                 (str/replace #"^\s*\n" ""))
           (throw ex))))))
-#_ (diff ".gitconfig" "notes.org")

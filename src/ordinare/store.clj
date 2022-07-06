@@ -1,6 +1,6 @@
 (ns ordinare.store
   (:require
-   [babashka.fs     :as fs]
+   [ordinare.fs     :as fs]
    [ordinare.config :refer [*config*]])
   (:refer-clojure :exclude [resolve]))
 
@@ -11,6 +11,9 @@
   (fs/path (-> *config* :config-dir) STORE))
 
 (defn resolve
-  [path]
-  (str (fs/path (store-dir) path)))
-#_ (resolve "foo")
+  [{:keys [path] :as module}]
+  (let [store-path (-> (store-dir)
+                       (fs/path (-> module :ord/context :path) path)
+                       str)]
+    (when (fs/exists? store-path)
+      store-path)))

@@ -2,10 +2,10 @@
   (:require
    [babashka.fs        :as fs]
    [clojure.spec.alpha :as s]
+   [clojure.string     :as str]
    [ordinare.module    :as module]
    [ordinare.module.fs :as o.fs]
    [ordinare.spec      :as o.s]
-   [ordinare.store     :as store]
    [ordinare.util      :as u]))
 
 (defn pre-walk-pc
@@ -55,25 +55,12 @@
 
 (defn- path->module
   "Infers if path is a file or directory. Returns the appropriate module."
-  [path]
-  (let [store-path
-        (store/resolve path)
-
-        module
-        (cond
-          ;; file in store
-          (and (fs/exists? store-path)
-               (fs/regular-file? store-path))
-          o.fs/file
-
-          ;; file not in store
-          (fs/extension path)
-          o.fs/file
-
-          ;; directory
-          :else
-          o.fs/directory)]
-
+  [{children :ord/children} path]
+  (let [module
+        (if (or children
+                (str/ends-with? path "/"))
+          o.fs/directory
+          o.fs/file)]
     (-> module
         (u/qualify-keys :ord)
         (assoc :path path))))
@@ -90,15 +77,8 @@
         (dissoc :tag)
         (merge (let [[k v] tag]
                  (case k
-                   :path   (path->module v)
+                   :path   (path->module result v)
                    :module (u/qualify-keys v :ord)))))))
-
-(comment
-  (normalize-node ["src/foo" {:bar "BAR"}])
-  (normalize-node [{:type :foo, :fn identity} {:bar "BAR"}])
-  (normalize-node ["src/foo" {:bar "BAR"} 1 2 3])
-  (normalize-node ["src/foo" {:bar "BAR"} 1 2 3 [:foo]])
-  (normalize-node ["src/foo" {:bar "BAR"} 1 2 3 ^:ordinare/arg [:foo] [:bar]]))
 
 (defn normalize
   "Takes a node in hiccup format and returns it in normalized form."

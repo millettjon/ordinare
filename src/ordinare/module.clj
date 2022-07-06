@@ -1,5 +1,6 @@
 (ns ordinare.module
   (:require
+   [clojure.pprint     :refer [pprint]]
    [clojure.spec.alpha :as s]
    [ordinare.config    :refer [*config*]]
    [ordinare.fs        :as fs]
@@ -16,11 +17,20 @@
                   fs/normalize)]
     (fs/starts-with? path target-path)))
 
+;; TODO: add color
+;; TODO: use bat if available
 (defn assert-valid
   [module]
   (when-let [spec (:ord/spec module)]
-    (or (s/valid? spec module)
-        (throw (ex-info (str "invalid " spec) (sth/explain-data spec module)))))
+    (when-not (s/valid? spec module)
+      (let [description (sth/explain-data spec module)]
+        (println "----- INVALID CONFIGURATION -----")
+        (println "----- DESCRIPTION -----")
+        (pprint description)
+        (println)
+        (println "----- VALUE -----")
+        (pprint module)
+        (throw (ex-info (str "invalid " spec) description)))))
   module)
 
 (defn context-dir

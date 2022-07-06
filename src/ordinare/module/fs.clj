@@ -6,7 +6,9 @@
    [ordinare.effect    :as effect]
    [ordinare.spec      :as o.s]
    [ordinare.store     :as store]
-   [ordinare.util      :as u]))
+   [ordinare.util      :as u]
+   [selmer.parser      :as selmer])
+  (:refer-clojure :exclude [spit]))
 
 ;; ----------
 ;; EFFECTS
@@ -16,10 +18,12 @@
   {:fn       #(fs.fx/create-dir path)
    :message "mkdir"})
 
-(defn touch
-  [path]
-  {:fn      #(fs.fx/touch path)
-   :message "touch"})
+(defn spit
+  [path content render?]
+  {:fn      #(fs.fx/spit path content)
+   :message (if render?
+              "render from template"
+              "copy from string")})
 
 (defn copy
   [from to]
@@ -27,9 +31,8 @@
    :message "copy from store"})
 
 (defn diff
-  [a b]
-  {:message (format "diff\n%s"
-                    (u/indent 1 (fs/diff a b)))})
+  [diff-output]
+  {:message (format "diff\n%s" (u/indent 1 diff-output))})
 
 (defn delete
   [path]
@@ -62,32 +65,59 @@
 
 ;; ----------
 ;; FILE MODULE
-;; TODO render template if :render is passed
+;; Create ns for file specs.
+(create-ns 'ordinare.module.fs.file)
+(alias 'fs.file 'ordinare.module.fs.file)
+
+(s/def ::fs.file/args (s/cat :content (s/? string?)))
+(s/def ::fs.file/data map?)
+(s/def ::fs.file/opts (s/keys :opt-un [::fs.file/data]))
+
+(s/def ::fs/file
+  (s/keys :req-un [::o.s/path]
+          :opt-un [::fs.file/args
+                   ::fs.file/opts]))
+
 (def file
   {:type :file
    :name #(:path %)
-   :spec (s/keys :req-un [::o.s/path])
-   :fn   (fn [{:keys [path]}]
-           (let [store-path (store/resolve path)]
-             (cond
-               ;; doesn't exist
-               ;; copy from store or create empty file
-               (not (fs/exists? path))
-               (if (fs/exists? store-path)
-                 [(copy store-path path)]
-                 [(touch path)])
+   :spec ::fs/file
+   :fn   (fn [{:keys     [path data]
+               [content] :args
+               :as       module}]
+           (let [store-path (store/resolve module)
+                 new?       (not (fs/exists? path))]
+             (if-not (or new? (fs/regular-file? path))
+               ;; warn if not a file
+               [(effect/warn (format "non-file exists at %s" path))]
 
-               ;; exists
-               ;; copy from store
-               (fs/regular-file? path)
-               (if (fs/exists? store-path)
-                 (when-not (fs/same? store-path path)
-                   [(diff path store-path)
-                    (copy store-path path)])
-                 [(effect/warn "file not found in store")])
+               ;; create new or update existing file
+               (let [;; Get source data (content or file).
+                     from
+                     (cond
+                       content    content
+                       store-path (if data
+                                    (fs/slurp store-path)
+                                    (fs/path store-path)))
 
-               :else
-               [(effect/warn (format "non-file exists at %s" path))])))})
+                     ;; Render from template (if data was passed).
+                     from (some-> from
+                                  (cond->
+                                      data (selmer/render data)))
+
+                     ;; Calculate the diff if there is a from source.
+                     changes (some->> from (fs/diff path))]
+
+                 ;; Return the applicable effects.
+                 (if (nil? from)
+                   [(effect/warn "file not found in store")]
+                   (cond-> []
+                     ;; add the diff (if any)
+                     changes (conj (diff changes))
+                     ;; add side effects (if any)
+                     changes (conj (if (string? from)
+                                     (spit path from data)
+                                     (copy from path)))))))))})
 
 ;; ----------
 ;; SYMLINK MODULE

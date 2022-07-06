@@ -2,11 +2,10 @@
   (:require
    [docopt.core      :as docopt]
    [ordinare.command :as command]
-   [ordinare.config  :refer [*config*]]
+   [ordinare.config  :as config]
    [ordinare.log     :as log]
    [ordinare.module  :as module]
-   [ordinare.tree    :as tree]
-   [ordinare.config :as config]))
+   [ordinare.tree    :as tree]))
 
 ;; Ref: http://docopt.org/
 (def usage "ordinare - organize directory
@@ -24,7 +23,7 @@ Options:
   [arg-map]
   (let [targets (-> arg-map :path-or-module set)]
     (-> arg-map
-        (assoc :tree (-> *config*
+        (assoc :tree (-> config/*config*
                          :root
                          tree/init-from-config
                          (tree/select
@@ -60,6 +59,7 @@ Options:
   [arg-map]
   (log/debug "arguments" arg-map)
   ((condp #(some %2 %1) arg-map
+     ;; #{:wd}     command/wd
      #{:status} command/status
      #{:apply}  command/apply)
    arg-map))
